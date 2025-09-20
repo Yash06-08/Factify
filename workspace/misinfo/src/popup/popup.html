@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MisinfoGuard</title>
+    <link rel="stylesheet" href="../styles/globals.css">
+    <style>
+        body {
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .popup-compact { width: 350px; min-height: 500px; }
+        .popup-normal { width: 420px; min-height: 650px; }
+        .popup-large { width: 500px; min-height: 750px; }
+    </style>
+</head>
+<body id="popup-body" class="popup-normal bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900">
+    <div id="popup-root" class="h-full"></div>
+    <script type="module" src="./popup.tsx"></script>
+</body>
+</html>

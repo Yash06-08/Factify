@@ -1,0 +1,133 @@
+/* Content script styles for MisinfoGuard */
+
+/* Ensure our overlays don't interfere with page styles */
+#misinfoguard-overlay,
+#misinfoguard-drag-overlay {
+  all: initial;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+#misinfoguard-overlay * {
+  box-sizing: border-box;
+}
+
+/* Analysis overlay animations */
+#misinfoguard-overlay {
+  animation: misinfoguard-fade-in 0.3s ease-out;
+}
+
+@keyframes misinfoguard-fade-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* Progress bar animation */
+#misinfoguard-overlay #progress-bar {
+  animation: misinfoguard-progress-shine 2s infinite;
+}
+
+@keyframes misinfoguard-progress-shine {
+  0% {
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+  }
+  50% {
+    background: linear-gradient(90deg, #60a5fa 0%, #93c5fd 50%, #60a5fa 100%);
+  }
+  100% {
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+  }
+}
+
+/* Button hover effects */
+#misinfoguard-overlay button:hover {
+  background: #e5e7eb !important;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Notification styles */
+.misinfoguard-notification {
+  animation: misinfoguard-slide-in 0.3s ease-out;
+}
+
+@keyframes misinfoguard-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Drag overlay styles */
+.misinfoguard-drag-overlay {
+  animation: misinfoguard-drag-fade-in 0.2s ease-out;
+}
+
+@keyframes misinfoguard-drag-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Ensure proper z-index stacking */
+#misinfoguard-overlay {
+  z-index: 2147483647; /* Maximum z-index value */
+}
+
+.misinfoguard-notification {
+  z-index: 2147483646;
+}
+
+.misinfoguard-drag-overlay {
+  z-index: 2147483645;
+}
+
+/* Dark mode support for overlays */
+@media (prefers-color-scheme: dark) {
+  #misinfoguard-overlay .container {
+    background: #1f2937 !important;
+    color: #f9fafb !important;
+  }
+  
+  #misinfoguard-overlay h3 {
+    color: #f9fafb !important;
+  }
+  
+  #misinfoguard-overlay p {
+    color: #d1d5db !important;
+  }
+  
+  #misinfoguard-overlay button {
+    background: #374151 !important;
+    color: #f9fafb !important;
+  }
+  
+  #misinfoguard-overlay button:hover {
+    background: #4b5563 !important;
+  }
+  
+  .misinfoguard-notification {
+    background: #1f2937 !important;
+    color: #f9fafb !important;
+  }
+  
+  .misinfoguard-drag-overlay .container {
+    background: #1f2937 !important;
+    color: #f9fafb !important;
+    border-color: #3b82f6 !important;
+  }
+}

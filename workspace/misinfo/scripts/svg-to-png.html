@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SVG to PNG Converter</title>
+</head>
+<body>
+    <h2>SVG to PNG Converter for MisinfoGuard</h2>
+    <div id="output"></div>
+    
+    <script>
+        const sizes = [16, 32, 48, 128];
+        const output = document.getElementById('output');
+        
+        sizes.forEach(size => {
+            const svg = `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="24" height="24" rx="4" fill="#3B82F6"/>
+                <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="white"/>
+                <circle cx="12" cy="12" r="8" stroke="white" stroke-width="1.5" fill="none"/>
+                <path d="M8 12L11 15L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                const link = document.createElement('a');
+                link.download = `icon-${size}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.textContent = `Download icon-${size}.png`;
+                link.style.display = 'block';
+                link.style.marginBottom = '10px';
+                output.appendChild(link);
+            };
+            
+            const svgBlob = new Blob([svg], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(svgBlob);
+            img.src = url;
+        });
+    </script>
+</body>
+</html>

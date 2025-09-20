@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MisinfoGuard Extension Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-text {
+            background: #fff;
+            border: 2px dashed #007bff;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        .test-text:hover {
+            background: #e3f2fd;
+        }
+        .instructions {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        h1 { color: #007bff; }
+        h2 { color: #28a745; }
+        h3 { color: #6c757d; }
+        .highlight { background: yellow; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ MisinfoGuard Extension Test Page</h1>
+    
+    <div class="instructions">
+        <h3>📋 How to Test:</h3>
+        <ol>
+            <li><strong>Select text</strong> in any of the blue boxes below</li>
+            <li><strong>Right-click</strong> on the selected text</li>
+            <li><strong>Look for</strong> "Fact-check Text with MisinfoGuard" in the context menu</li>
+            <li><strong>Click it</strong> and wait for the fact-check popup</li>
+            <li><strong>Check console</strong> (F12) for debugging logs</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ True Statements (Should show GREEN verdict)</h2>
+        
+        <div class="test-text">
+            Water boils at 100 degrees Celsius (212 degrees Fahrenheit) at sea level under standard atmospheric pressure.
+        </div>
+        
+        <div class="test-text">
+            The Earth orbits around the Sun, completing one full orbit approximately every 365.25 days, which is why we have leap years.
+        </div>
+        
+        <div class="test-text">
+            Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>❌ False Statements (Should show RED verdict with corrections)</h2>
+        
+        <div class="test-text">
+            The Earth is flat and all evidence of its spherical shape is fabricated by NASA and other space agencies.
+        </div>
+        
+        <div class="test-text">
+            Vaccines contain microchips that are used by the government to track and control people's minds.
+        </div>
+        
+        <div class="test-text">
+            The moon landing in 1969 was completely staged and filmed in a Hollywood studio with Stanley Kubrick as the director.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>⚠️ Partially True Statements (Should show ORANGE verdict)</h2>
+        
+        <div class="test-text">
+            Coffee is healthy and has no negative effects on the human body whatsoever.
+        </div>
+        
+        <div class="test-text">
+            All natural products are completely safe and have no side effects compared to synthetic alternatives.
+        </div>
+        
+        <div class="test-text">
+            Social media platforms never censor content and always promote free speech without any restrictions.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>❓ Unverifiable Statements (Should show GRAY verdict)</h2>
+        
+        <div class="test-text">
+            Aliens from the Zeta Reticuli star system visited Earth last Tuesday and had a secret meeting with world leaders.
+        </div>
+        
+        <div class="test-text">
+            There is a secret underground city beneath Denver International Airport where the Illuminati holds their meetings.
+        </div>
+        
+        <div class="test-text">
+            Time travel will be invented exactly 47 years from today by a scientist named Dr. Johnson in Switzerland.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🖼️ Image Testing</h2>
+        <p>Drag these images to the MisinfoGuard extension popup to test SightEngine API:</p>
+        
+        <img src="https://via.placeholder.com/300x200/007bff/ffffff?text=Test+Image+1" alt="Test Image 1" style="margin: 10px; border: 2px solid #007bff;">
+        <img src="https://via.placeholder.com/300x200/28a745/ffffff?text=Test+Image+2" alt="Test Image 2" style="margin: 10px; border: 2px solid #28a745;">
+    </div>
+
+    <div class="warning">
+        <h3>⚠️ Important Notes:</h3>
+        <ul>
+            <li>Make sure you have configured your <strong>Gemini API key</strong> in the extension settings</li>
+            <li>Keep the browser console open (F12) to see debugging logs</li>
+            <li>If context menu doesn't appear, try reloading the extension</li>
+            <li>Some websites may block context menus - this test page should work</li>
+        </ul>
+    </div>
+
+    <div class="error">
+        <h3>🚨 Troubleshooting:</h3>
+        <ul>
+            <li><strong>No context menu:</strong> Reload extension, check permissions</li>
+            <li><strong>Analysis fails:</strong> Check API keys in settings</li>
+            <li><strong>No popup shows:</strong> Check console for errors</li>
+            <li><strong>SightEngine errors:</strong> Verify credentials and account balance</li>
+        </ul>
+    </div>
+
+    <div class="instructions">
+        <h3>🔍 Expected Console Logs:</h3>
+        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;">
+Creating context menus...
+Context menus created successfully
+Background: Context menu clicked
+Background: Menu item ID: misinfoguard-analyze-text
+Content script received message: {type: "ANALYZE_TEXT", ...}
+Content script: handleAnalyzeText called with: {...}
+Content script: Sending ANALYZE_TEXT message to background
+Content script: Received response from background: {success: true, ...}
+Content script: Showing fact-check popup
+        </pre>
+    </div>
+
+    <script>
+        // Add some interactivity to highlight text when clicked
+        document.querySelectorAll('.test-text').forEach(element => {
+            element.addEventListener('click', function() {
+                // Select all text in the clicked element
+                const range = document.createRange();
+                range.selectNodeContents(this);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                // Add visual feedback
+                this.style.background = '#e3f2fd';
+                setTimeout(() => {
+                    this.style.background = '#fff';
+                }, 2000);
+            });
+        });
+
+        // Log page load for debugging
+        console.log('MisinfoGuard test page loaded');
+        console.log('Extension should create context menus on this page');
+        
+        // Test extension messaging
+        setTimeout(() => {
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                console.log('Chrome extension APIs available');
+                chrome.runtime.sendMessage({type: 'GET_SETTINGS'}, (response) => {
+                    console.log('Extension settings:', response);
+                });
+            } else {
+                console.log('Chrome extension APIs not available (normal for web page)');
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
