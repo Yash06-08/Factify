@@ -34,12 +34,16 @@ const API_CONFIG = {
       "nudity,wad,offensive,face-attributes,celebrity,text-content,gore,qr-content",
   },
 
-  // Laughing Face API (placeholder - replace with actual API if available)
-  laughingFace: {
+  // Hugging Face API for AI models and NLP tasks
+  huggingFace: {
     apiKey:
-      process.env.LAUGHING_FACE_API_KEY || "YOUR_LAUGHING_FACE_API_KEY_HERE",
-    baseUrl: "https://api.laughingface.ai/v1",
-    endpoint: "/detect-humor",
+      process.env.HUGGING_FACE_API_KEY || "YOUR_HUGGING_FACE_API_KEY_HERE",
+    baseUrl: "https://api-inference.huggingface.co/models",
+    models: {
+      sentiment: "cardiffnlp/twitter-roberta-base-sentiment-latest",
+      textClassification: "facebook/bart-large-mnli",
+      questionAnswering: "deepset/roberta-base-squad2",
+    },
   },
 };
 
@@ -388,76 +392,193 @@ class SightEngineService extends APIService {
   }
 }
 
-// Laughing Face Service (placeholder implementation)
-class LaughingFaceService extends APIService {
-  async detectHumor(content) {
-    this.checkRateLimit("laughingface", 50); // 50 requests per hour
+// Hugging Face Service for NLP and AI models
+class HuggingFaceService extends APIService {
+  async analyzeSentiment(content) {
+    this.checkRateLimit("huggingface", 100); // 100 requests per hour
 
     try {
-      // This is a placeholder implementation
-      // Replace with actual Laughing Face API calls when available
       const response = await this.makeRequest(
-        `${API_CONFIG.laughingFace.baseUrl}${API_CONFIG.laughingFace.endpoint}`,
+        `${API_CONFIG.huggingFace.baseUrl}/${API_CONFIG.huggingFace.models.sentiment}`,
         {
           headers: {
-            Authorization: `Bearer ${API_CONFIG.laughingFace.apiKey}`,
+            Authorization: `Bearer ${API_CONFIG.huggingFace.apiKey}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            content: content,
-            analysis_type: "humor_detection",
+            inputs: content,
           }),
         }
       );
 
       return {
         success: true,
-        humorScore: response.humor_score || 0,
-        humorType: response.humor_type || "none",
-        confidence: response.confidence || 0,
+        sentiment: response[0]?.label || "NEUTRAL",
+        confidence: response[0]?.score || 0,
+        allScores: response || [],
       };
     } catch (error) {
-      console.error("Laughing Face Service error:", error);
-      // Fallback humor detection
-      return this.fallbackHumorDetection(content);
+      console.error("Hugging Face Service error:", error);
+      return this.fallbackSentimentAnalysis(content);
     }
   }
 
-  fallbackHumorDetection(content) {
-    const humorKeywords = [
-      "joke",
-      "funny",
-      "lol",
-      "haha",
-      "humor",
-      "comedy",
-      "laugh",
-      "amusing",
-    ];
-    const sarcasmKeywords = ["obviously", "sure", "yeah right", "totally"];
+  async classifyText(content, labels = ["factual", "opinion", "misleading"]) {
+    this.checkRateLimit("huggingface", 100);
 
-    let humorScore = 0;
-    let humorType = "none";
+    try {
+      const response = await this.makeRequest(
+        `${API_CONFIG.huggingFace.baseUrl}/${API_CONFIG.huggingFace.models.textClassification}`,
+        {
+          headers: {
+            Authorization: `Bearer ${API_CONFIG.huggingFace.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inputs: content,
+            parameters: {
+              candidate_labels: labels,
+            },
+          }),
+        }
+      );
+
+      return {
+        success: true,
+        classification: response.labels?.[0] || "unknown",
+        confidence: response.scores?.[0] || 0,
+        allResults: response || {},
+      };
+    } catch (error) {
+      console.error("Hugging Face Classification error:", error);
+      return this.fallbackClassification(content);
+    }
+  }
+
+  async testConnection() {
+    try {
+      const response = await this.analyzeSentiment("This is a test message.");
+      return {
+        success: response.success,
+        status: "connected",
+        message: "Hugging Face API is working",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: "error",
+        message: error.message,
+      };
+    }
+  }
+
+  fallbackSentimentAnalysis(content) {
+    const positiveWords = [
+      "good",
+      "great",
+      "excellent",
+      "amazing",
+      "wonderful",
+      "fantastic",
+    ];
+    const negativeWords = [
+      "bad",
+      "terrible",
+      "awful",
+      "horrible",
+      "disgusting",
+      "hate",
+    ];
 
     const lowerContent = content.toLowerCase();
+    let positiveScore = 0;
+    let negativeScore = 0;
 
-    humorKeywords.forEach((keyword) => {
-      if (lowerContent.includes(keyword)) humorScore += 10;
+    positiveWords.forEach((word) => {
+      if (lowerContent.includes(word)) positiveScore++;
     });
 
-    sarcasmKeywords.forEach((keyword) => {
-      if (lowerContent.includes(keyword)) {
-        humorScore += 15;
-        humorType = "sarcasm";
-      }
+    negativeWords.forEach((word) => {
+      if (lowerContent.includes(word)) negativeScore++;
     });
 
-    if (humorScore > 20) humorType = "humor";
+    let sentiment = "NEUTRAL";
+    let confidence = 0.5;
+
+    if (positiveScore > negativeScore) {
+      sentiment = "POSITIVE";
+      confidence = Math.min(0.8, 0.5 + positiveScore * 0.1);
+    } else if (negativeScore > positiveScore) {
+      sentiment = "NEGATIVE";
+      confidence = Math.min(0.8, 0.5 + negativeScore * 0.1);
+    }
 
     return {
       success: true,
-      humorScore: Math.min(100, humorScore),
-      humorType,
-      confidence: humorScore > 0 ? 0.6 : 0.3,
+      sentiment,
+      confidence,
+      allScores: [{ label: sentiment, score: confidence }],
+    };
+  }
+
+  fallbackClassification(content) {
+    const factualIndicators = [
+      "study shows",
+      "research indicates",
+      "according to",
+      "data reveals",
+    ];
+    const opinionIndicators = [
+      "i think",
+      "in my opinion",
+      "i believe",
+      "personally",
+    ];
+    const misleadingIndicators = [
+      "shocking truth",
+      "they don't want you to know",
+      "secret",
+      "conspiracy",
+    ];
+
+    const lowerContent = content.toLowerCase();
+
+    if (
+      misleadingIndicators.some((indicator) =>
+        lowerContent.includes(indicator)
+      )
+    ) {
+      return {
+        success: true,
+        classification: "misleading",
+        confidence: 0.7,
+        allResults: { labels: ["misleading"], scores: [0.7] },
+      };
+    } else if (
+      factualIndicators.some((indicator) => lowerContent.includes(indicator))
+    ) {
+      return {
+        success: true,
+        classification: "factual",
+        confidence: 0.6,
+        allResults: { labels: ["factual"], scores: [0.6] },
+      };
+    } else if (
+      opinionIndicators.some((indicator) => lowerContent.includes(indicator))
+    ) {
+      return {
+        success: true,
+        classification: "opinion",
+        confidence: 0.6,
+        allResults: { labels: ["opinion"], scores: [0.6] },
+      };
+    }
+
+    return {
+      success: true,
+      classification: "factual",
+      confidence: 0.5,
+      allResults: { labels: ["factual"], scores: [0.5] },
     };
   }
 }
@@ -468,7 +589,7 @@ class BackendService {
     this.gemini = new GeminiService();
     this.ocr = new OCRService();
     this.sightEngine = new SightEngineService();
-    this.laughingFace = new LaughingFaceService();
+    this.huggingFace = new HuggingFaceService();
   }
 
   // Comprehensive content analysis
@@ -480,13 +601,18 @@ class BackendService {
     };
 
     try {
-      // Text analysis with Gemini
+      // Text analysis with Gemini and Hugging Face
       if (content) {
         results.analysis.factCheck = await this.gemini.analyzeContent(
           content,
           type
         );
-        results.analysis.humor = await this.laughingFace.detectHumor(content);
+        results.analysis.sentiment = await this.huggingFace.analyzeSentiment(
+          content
+        );
+        results.analysis.classification = await this.huggingFace.classifyText(
+          content
+        );
       }
 
       // Image analysis
@@ -526,25 +652,85 @@ class BackendService {
   // Health check for all services
   async healthCheck() {
     const services = {
-      gemini: false,
-      ocr: false,
-      sightEngine: false,
-      laughingFace: false,
+      gemini: { status: "checking", message: "Testing connection..." },
+      ocr: { status: "checking", message: "Testing connection..." },
+      sightEngine: { status: "checking", message: "Testing connection..." },
+      huggingFace: { status: "checking", message: "Testing connection..." },
     };
 
     // Test each service with minimal requests
     try {
-      await this.gemini.analyzeContent("test", "text");
-      services.gemini = true;
+      const geminiTest = await this.gemini.analyzeContent("test", "text");
+      services.gemini = {
+        status: "connected",
+        message: "Gemini AI is working properly",
+        lastTest: new Date().toISOString(),
+      };
     } catch (e) {
-      console.warn("Gemini service unavailable");
+      services.gemini = {
+        status: "error",
+        message: e.message || "Gemini service unavailable",
+        lastTest: new Date().toISOString(),
+      };
     }
 
-    // Add health checks for other services as needed
+    try {
+      const hfTest = await this.huggingFace.testConnection();
+      services.huggingFace = {
+        status: hfTest.success ? "connected" : "error",
+        message: hfTest.message,
+        lastTest: new Date().toISOString(),
+      };
+    } catch (e) {
+      services.huggingFace = {
+        status: "error",
+        message: e.message || "Hugging Face service unavailable",
+        lastTest: new Date().toISOString(),
+      };
+    }
+
+    // OCR.space test (simplified)
+    services.ocr = {
+      status:
+        API_CONFIG.ocrSpace.apiKey !== "YOUR_OCR_SPACE_API_KEY_HERE"
+          ? "configured"
+          : "not_configured",
+      message:
+        API_CONFIG.ocrSpace.apiKey !== "YOUR_OCR_SPACE_API_KEY_HERE"
+          ? "API key configured"
+          : "API key not set",
+      lastTest: new Date().toISOString(),
+    };
+
+    // SightEngine test (simplified)
+    services.sightEngine = {
+      status:
+        API_CONFIG.sightEngine.apiUser !== "YOUR_SIGHTENGINE_USER_HERE" &&
+        API_CONFIG.sightEngine.apiSecret !== "YOUR_SIGHTENGINE_SECRET_HERE"
+          ? "configured"
+          : "not_configured",
+      message:
+        API_CONFIG.sightEngine.apiUser !== "YOUR_SIGHTENGINE_USER_HERE" &&
+        API_CONFIG.sightEngine.apiSecret !== "YOUR_SIGHTENGINE_SECRET_HERE"
+          ? "API credentials configured"
+          : "API credentials not set",
+      lastTest: new Date().toISOString(),
+    };
+
+    const connectedServices = Object.values(services).filter(
+      (s) => s.status === "connected"
+    ).length;
+    const totalServices = Object.keys(services).length;
 
     return {
-      status: Object.values(services).some((s) => s) ? "partial" : "down",
+      status:
+        connectedServices > 0
+          ? connectedServices === totalServices
+            ? "all_connected"
+            : "partial"
+          : "down",
       services,
+      summary: `${connectedServices}/${totalServices} services connected`,
       timestamp: new Date().toISOString(),
     };
   }

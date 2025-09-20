@@ -7,7 +7,8 @@ A comprehensive web application for detecting misinformation, fact-checking cont
 ### ✨ New Features Added
 - **VS Code-like Animated Background**: Matrix-style code rain and heat map visualization
 - **AI Fact-Check Chatbot**: Interactive chatbot for real-time fact-checking assistance
-- **Backend API Integration**: Support for multiple AI services (Gemini, OCR.space, SightEngine)
+- **Backend API Integration**: Support for multiple AI services (Gemini, OCR.space, SightEngine, Hugging Face)
+- **API Status Checker**: Real-time monitoring of all backend services
 - **Dark Theme**: VS Code-inspired dark theme with animated elements
 
 ### 🔍 Core Features
@@ -32,7 +33,7 @@ const API_KEYS = {
     OCR_SPACE_API_KEY: 'your_actual_ocr_space_api_key',
     SIGHTENGINE_API_USER: 'your_sightengine_user',
     SIGHTENGINE_API_SECRET: 'your_sightengine_secret',
-    LAUGHING_FACE_API_KEY: 'your_laughing_face_api_key'
+    HUGGING_FACE_API_KEY: 'your_hugging_face_api_key'
 };
 ```
 
@@ -56,9 +57,11 @@ const API_KEYS = {
 - Get API user and secret from dashboard
 - Free tier: 2,000 operations/month
 
-#### Laughing Face API
-- Currently placeholder - replace with actual API when available
-- Or implement custom humor detection
+#### Hugging Face API
+- Visit: https://huggingface.co/settings/tokens
+- Sign up for free account
+- Create new token with read access
+- Free tier: 30,000 requests/month
 
 ### 4. Local Development
 
@@ -101,10 +104,21 @@ The animated background includes:
 
 The AI Fact-Check Assistant can help with:
 - **Content Analysis**: Analyze text for credibility and bias
+- **Sentiment Analysis**: Understand emotional tone using Hugging Face models
+- **Text Classification**: Categorize content as factual, opinion, or misleading
 - **Source Verification**: Check reliability of news sources
 - **Scam Detection**: Identify common fraud patterns
 - **Health Claims**: Verify medical information
 - **Social Media Posts**: Analyze viral content
+
+## 🔧 API Status Checker
+
+Monitor all backend services in real-time:
+- **Service Health**: Check if APIs are responding
+- **Configuration Status**: Verify API keys are properly set
+- **Connection Testing**: Test actual API connections
+- **Real-time Updates**: Live status indicators with timestamps
+- **Error Reporting**: Detailed error messages for troubleshooting
 
 ### Chatbot Commands
 - "Is this news article credible?"

@@ -252,6 +252,102 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- API Status Checker -->
+                <div class="api-status-section" id="apiStatusSection">
+                    <div class="status-header">
+                        <h3>🔧 API Services Status</h3>
+                        <p>Check if all backend services are working properly</p>
+                        <button class="btn btn--sm btn--outline" id="refreshStatusBtn" onclick="checkAPIStatus()">
+                            <span id="refreshIcon">🔄</span> Check Status
+                        </button>
+                    </div>
+                    
+                    <div class="services-grid" id="servicesGrid">
+                        <div class="service-card" data-service="gemini">
+                            <div class="service-header">
+                                <div class="service-icon">🤖</div>
+                                <div class="service-info">
+                                    <h4>Gemini AI</h4>
+                                    <p>Advanced fact-checking and content analysis</p>
+                                </div>
+                                <div class="service-status" id="geminiStatus">
+                                    <span class="status-indicator checking"></span>
+                                    <span class="status-text">Checking...</span>
+                                </div>
+                            </div>
+                            <div class="service-details" id="geminiDetails">
+                                <div class="status-message">Testing connection...</div>
+                                <div class="last-test">Last tested: Never</div>
+                            </div>
+                        </div>
+
+                        <div class="service-card" data-service="huggingface">
+                            <div class="service-header">
+                                <div class="service-icon">🤗</div>
+                                <div class="service-info">
+                                    <h4>Hugging Face</h4>
+                                    <p>Sentiment analysis and text classification</p>
+                                </div>
+                                <div class="service-status" id="huggingfaceStatus">
+                                    <span class="status-indicator checking"></span>
+                                    <span class="status-text">Checking...</span>
+                                </div>
+                            </div>
+                            <div class="service-details" id="huggingfaceDetails">
+                                <div class="status-message">Testing connection...</div>
+                                <div class="last-test">Last tested: Never</div>
+                            </div>
+                        </div>
+
+                        <div class="service-card" data-service="ocr">
+                            <div class="service-header">
+                                <div class="service-icon">👁️</div>
+                                <div class="service-info">
+                                    <h4>OCR.space</h4>
+                                    <p>Text extraction from images</p>
+                                </div>
+                                <div class="service-status" id="ocrStatus">
+                                    <span class="status-indicator checking"></span>
+                                    <span class="status-text">Checking...</span>
+                                </div>
+                            </div>
+                            <div class="service-details" id="ocrDetails">
+                                <div class="status-message">Testing connection...</div>
+                                <div class="last-test">Last tested: Never</div>
+                            </div>
+                        </div>
+
+                        <div class="service-card" data-service="sightengine">
+                            <div class="service-header">
+                                <div class="service-icon">🛡️</div>
+                                <div class="service-info">
+                                    <h4>SightEngine</h4>
+                                    <p>Content moderation and image analysis</p>
+                                </div>
+                                <div class="service-status" id="sightengineStatus">
+                                    <span class="status-indicator checking"></span>
+                                    <span class="status-text">Checking...</span>
+                                </div>
+                            </div>
+                            <div class="service-details" id="sightengineDetails">
+                                <div class="status-message">Testing connection...</div>
+                                <div class="last-test">Last tested: Never</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status-summary" id="statusSummary">
+                        <div class="summary-card">
+                            <div class="summary-icon">📊</div>
+                            <div class="summary-content">
+                                <h4>Overall Status</h4>
+                                <div class="summary-text" id="summaryText">Click "Check Status" to test all services</div>
+                                <div class="summary-timestamp" id="summaryTimestamp"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

@@ -15,9 +15,9 @@ const API_KEYS = {
     SIGHTENGINE_API_USER: 'your_sightengine_user_here',
     SIGHTENGINE_API_SECRET: 'your_sightengine_secret_here',
 
-    // Laughing Face API Key (placeholder)
-    // Replace with actual API when available
-    LAUGHING_FACE_API_KEY: 'your_laughing_face_api_key_here'
+    // Hugging Face API Key
+    // Get from: https://huggingface.co/settings/tokens
+    HUGGING_FACE_API_KEY: 'your_hugging_face_api_key_here'
 };
 
 // Optional configuration

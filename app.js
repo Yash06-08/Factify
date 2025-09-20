@@ -2491,6 +2491,215 @@ function sendChatMessage() {
   }
 }
 
+// API Status Checker
+class APIStatusChecker {
+  constructor() {
+    this.isChecking = false;
+    this.lastCheck = null;
+  }
+
+  async checkAllServices() {
+    if (this.isChecking) return;
+    
+    this.isChecking = true;
+    this.showCheckingState();
+    
+    try {
+      if (typeof backendService !== 'undefined') {
+        const healthCheck = await backendService.healthCheck();
+        this.updateServiceStatuses(healthCheck);
+        this.lastCheck = new Date();
+      } else {
+        // Fallback when backend service is not available
+        this.showFallbackStatus();
+      }
+    } catch (error) {
+      console.error('Health check failed:', error);
+      this.showErrorState(error.message);
+    } finally {
+      this.isChecking = false;
+      this.hideCheckingState();
+    }
+  }
+
+  showCheckingState() {
+    const refreshBtn = document.getElementById('refreshStatusBtn');
+    const refreshIcon = document.getElementById('refreshIcon');
+    
+    if (refreshBtn) {
+      refreshBtn.classList.add('refreshing');
+      refreshBtn.disabled = true;
+    }
+    
+    // Reset all service cards to checking state
+    const serviceCards = document.querySelectorAll('.service-card');
+    serviceCards.forEach(card => {
+      card.className = 'service-card';
+      const indicator = card.querySelector('.status-indicator');
+      const statusText = card.querySelector('.status-text');
+      
+      if (indicator) {
+        indicator.className = 'status-indicator checking';
+      }
+      if (statusText) {
+        statusText.textContent = 'Checking...';
+      }
+    });
+
+    // Update summary
+    const summaryText = document.getElementById('summaryText');
+    if (summaryText) {
+      summaryText.textContent = 'Testing all services...';
+    }
+  }
+
+  hideCheckingState() {
+    const refreshBtn = document.getElementById('refreshStatusBtn');
+    
+    if (refreshBtn) {
+      refreshBtn.classList.remove('refreshing');
+      refreshBtn.disabled = false;
+    }
+  }
+
+  updateServiceStatuses(healthCheck) {
+    const services = healthCheck.services;
+    
+    Object.keys(services).forEach(serviceName => {
+      const serviceData = services[serviceName];
+      this.updateServiceCard(serviceName, serviceData);
+    });
+
+    // Update summary
+    this.updateSummary(healthCheck);
+  }
+
+  updateServiceCard(serviceName, serviceData) {
+    const serviceCard = document.querySelector(`[data-service="${serviceName}"]`);
+    if (!serviceCard) return;
+
+    const indicator = serviceCard.querySelector('.status-indicator');
+    const statusText = serviceCard.querySelector('.status-text');
+    const statusMessage = serviceCard.querySelector('.status-message');
+    const lastTest = serviceCard.querySelector('.last-test');
+
+    // Update card class
+    serviceCard.className = `service-card ${serviceData.status}`;
+
+    // Update indicator
+    if (indicator) {
+      indicator.className = `status-indicator ${serviceData.status}`;
+    }
+
+    // Update status text
+    if (statusText) {
+      statusText.textContent = this.getStatusText(serviceData.status);
+    }
+
+    // Update message
+    if (statusMessage) {
+      statusMessage.textContent = serviceData.message || 'No additional information';
+    }
+
+    // Update last test time
+    if (lastTest && serviceData.lastTest) {
+      const testTime = new Date(serviceData.lastTest);
+      lastTest.textContent = `Last tested: ${testTime.toLocaleTimeString()}`;
+    }
+  }
+
+  updateSummary(healthCheck) {
+    const summaryText = document.getElementById('summaryText');
+    const summaryTimestamp = document.getElementById('summaryTimestamp');
+
+    if (summaryText) {
+      summaryText.textContent = `${healthCheck.summary} - Status: ${healthCheck.status.replace('_', ' ').toUpperCase()}`;
+    }
+
+    if (summaryTimestamp) {
+      const timestamp = new Date(healthCheck.timestamp);
+      summaryTimestamp.textContent = `Last checked: ${timestamp.toLocaleString()}`;
+    }
+  }
+
+  getStatusText(status) {
+    switch (status) {
+      case 'connected':
+        return 'Connected ✅';
+      case 'error':
+        return 'Error ❌';
+      case 'configured':
+        return 'Configured ⚙️';
+      case 'not_configured':
+        return 'Not Configured ⚠️';
+      case 'checking':
+        return 'Checking...';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  showFallbackStatus() {
+    const services = ['gemini', 'huggingface', 'ocr', 'sightengine'];
+    
+    services.forEach(serviceName => {
+      const serviceData = {
+        status: 'not_configured',
+        message: 'Backend service not available - check your configuration',
+        lastTest: new Date().toISOString()
+      };
+      this.updateServiceCard(serviceName, serviceData);
+    });
+
+    // Update summary
+    const summaryText = document.getElementById('summaryText');
+    const summaryTimestamp = document.getElementById('summaryTimestamp');
+
+    if (summaryText) {
+      summaryText.textContent = 'Backend service not available - Please check your configuration';
+    }
+
+    if (summaryTimestamp) {
+      summaryTimestamp.textContent = `Last checked: ${new Date().toLocaleString()}`;
+    }
+  }
+
+  showErrorState(errorMessage) {
+    const services = ['gemini', 'huggingface', 'ocr', 'sightengine'];
+    
+    services.forEach(serviceName => {
+      const serviceData = {
+        status: 'error',
+        message: errorMessage,
+        lastTest: new Date().toISOString()
+      };
+      this.updateServiceCard(serviceName, serviceData);
+    });
+
+    // Update summary
+    const summaryText = document.getElementById('summaryText');
+    const summaryTimestamp = document.getElementById('summaryTimestamp');
+
+    if (summaryText) {
+      summaryText.textContent = `Error checking services: ${errorMessage}`;
+    }
+
+    if (summaryTimestamp) {
+      summaryTimestamp.textContent = `Last checked: ${new Date().toLocaleString()}`;
+    }
+  }
+}
+
+// Global API status checker instance
+let apiStatusChecker;
+
+// Global function for the check status button
+function checkAPIStatus() {
+  if (apiStatusChecker) {
+    apiStatusChecker.checkAllServices();
+  }
+}
+
 // Initialize VS Code background and chatbot
 function initVSCodeFeatures() {
   // Initialize VS Code background
@@ -2498,6 +2707,9 @@ function initVSCodeFeatures() {
   
   // Initialize chatbot
   window.factCheckChatbot = new FactCheckChatbot();
+  
+  // Initialize API status checker
+  apiStatusChecker = new APIStatusChecker();
   
   // Set dark theme by default for VS Code look
   document.documentElement.setAttribute('data-color-scheme', 'dark');

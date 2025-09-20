@@ -3337,6 +3337,275 @@ section { scroll-margin-top: var(--header-height, 72px); }
   border-color: var(--color-primary);
 }
 
+/* API Status Checker Styles */
+.api-status-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-24);
+  margin-top: var(--space-24);
+}
+
+.status-header {
+  text-align: center;
+  margin-bottom: var(--space-24);
+  padding-bottom: var(--space-16);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.status-header h3 {
+  color: var(--color-text);
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-xl);
+}
+
+.status-header p {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-16);
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-20);
+  margin-bottom: var(--space-24);
+}
+
+.service-card {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  padding: var(--space-16);
+  transition: all var(--duration-fast) var(--ease-standard);
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--color-border);
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.service-card.connected::before {
+  background: var(--color-success);
+}
+
+.service-card.error::before {
+  background: var(--color-error);
+}
+
+.service-card.configured::before {
+  background: var(--color-warning);
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.service-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-12);
+  margin-bottom: var(--space-12);
+}
+
+.service-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-1);
+  border-radius: var(--radius-base);
+  flex-shrink: 0;
+}
+
+.service-info {
+  flex: 1;
+}
+
+.service-info h4 {
+  color: var(--color-text);
+  margin: 0 0 var(--space-4) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.service-info p {
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.service-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-shrink: 0;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.status-indicator.checking {
+  background: var(--color-info);
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.connected {
+  background: var(--color-success);
+  box-shadow: 0 0 8px rgba(var(--color-success-rgb), 0.4);
+}
+
+.status-indicator.error {
+  background: var(--color-error);
+  box-shadow: 0 0 8px rgba(var(--color-error-rgb), 0.4);
+}
+
+.status-indicator.configured {
+  background: var(--color-warning);
+  box-shadow: 0 0 8px rgba(var(--color-warning-rgb), 0.4);
+}
+
+.status-indicator.not_configured {
+  background: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+.status-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.service-details {
+  padding-left: var(--space-52);
+}
+
+.status-message {
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-4);
+  line-height: 1.4;
+}
+
+.last-test {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.status-summary {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-20);
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+  background: var(--color-bg-1);
+  padding: var(--space-16);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border);
+}
+
+.summary-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.summary-content h4 {
+  color: var(--color-text);
+  margin: 0 0 var(--space-4) 0;
+  font-size: var(--font-size-lg);
+}
+
+.summary-text {
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  margin-bottom: var(--space-4);
+  font-weight: var(--font-weight-medium);
+}
+
+.summary-timestamp {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Refresh button animation */
+#refreshIcon {
+  display: inline-block;
+  transition: transform var(--duration-normal) var(--ease-standard);
+}
+
+.refreshing #refreshIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Status colors for different states */
+.service-card.connected .status-text {
+  color: var(--color-success);
+}
+
+.service-card.error .status-text {
+  color: var(--color-error);
+}
+
+.service-card.configured .status-text {
+  color: var(--color-warning);
+}
+
+.service-card.not_configured .status-text {
+  color: var(--color-text-secondary);
+}
+
+/* Responsive design for API status */
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-16);
+  }
+  
+  .service-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+  
+  .service-status {
+    align-self: flex-start;
+  }
+  
+  .service-details {
+    padding-left: 0;
+    margin-top: var(--space-12);
+  }
+  
+  .summary-card {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-12);
+  }
+}
+
 /* Enhanced Article Cards */
 .article-card {
   background: var(--color-surface);
