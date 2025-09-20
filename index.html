@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MisinfoGuard - Professional misinformation detection and digital literacy</title>
+    <title>Factify - Professional misinformation detection and digital literacy</title>
     <meta name="description" content="Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels with 99.8% accuracy.">
     <meta name="keywords" content="misinformation, fact-checking, digital literacy, scam detection, AI verification">
     <link rel="stylesheet" href="style.css">
@@ -23,11 +23,11 @@
         <div class="container">
             <div class="header__content">
                 <div class="header__logo">
-                    <h1 class="logo__title">MisinfoGuard</h1>
+                    <h1 class="logo__title">Factify</h1>
                 </div>
                 <nav class="header__nav" role="navigation" aria-label="Main navigation">
                     <a href="#home" class="nav__link active" aria-current="page">Home</a>
-                    <a href="#verify" class="nav__link">Verify Content</a>
+                    <a href="#verify" class="nav__link">Verify Image</a>
                     <a href="#news" class="nav__link">Digital Literacy News</a>
                     <a href="#bot" class="nav__link">Mobile Bot</a>
                 </nav>
@@ -128,39 +128,13 @@
         <section id="verify" class="verification-section section hidden">
             <div class="container">
                 <div class="section-header">
-                    <h2>Content Verification</h2>
-                    <p>Paste suspicious text or upload an image to check for misinformation</p>
+                    <h2>Image Verification</h2>
+                    <p>Upload an image to check for misinformation, AI generation, and extract text</p>
                 </div>
                 
-                <div class="verification-interface">
-                    <button class="tab-btn active" data-tab="text" data-translate="checkText">Check Text</button>
-                    <button class="tab-btn" data-tab="image" data-translate="checkImage">Check Image</button>
-                </div>
-
                 <div class="tab-content-wrapper">
-                    <!-- Text Tab -->
-                    <div id="text-tab" class="tab-content active">
-                        <div class="input-card">
-                            <textarea 
-                                id="textInput" 
-                                class="form-control text-input" 
-                                placeholder="Paste suspicious message here..."
-                                data-translate-placeholder="pasteMessage"
-                                rows="6"
-                            ></textarea>
-                            <div class="input-actions">
-                                <button class="btn btn--primary analyze-btn" id="analyzeText" data-translate="analyzeNow">
-                                    Analyze Now
-                                </button>
-                                <button class="btn btn--outline clear-btn" id="clearText">
-                                    Clear
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Image Tab -->
-                    <div id="image-tab" class="tab-content">
+                    <div id="image-tab" class="tab-content active">
                         <div class="input-card">
                             <input type="file" id="imageInput" accept="image/*" class="file-input" />
                             <div class="file-upload" id="fileUploadArea">
@@ -478,7 +452,7 @@
         <div class="container">
             <div class="section-header">
                 <h2>Continue on Mobile</h2>
-                <p>Access MisinfoGuard verification tools directly from your messaging apps</p>
+                <p>Access Factify verification tools directly from your messaging apps</p>
             </div>
 
             <div class="bot-integration">
@@ -508,11 +482,11 @@
                     <div class="bot-card__body">
                         <p>Use our Telegram bot for quick content verification and educational resources</p>
                         <div class="contact-info">
-                            <strong>@MisinfoGuardBot</strong>
+                            <strong>@FactifyBot</strong>
                         </div>
                     </div>
                     <div class="bot-card__actions">
-                        <a href="https://t.me/MisinfoGuardBot" target="_blank" class="btn btn--primary">
+                        <a href="https://t.me/FactifyBot" target="_blank" class="btn btn--primary">
                             Open Telegram Bot
                         </a>
                     </div>
@@ -526,7 +500,7 @@
         <div class="container">
             <div class="footer-inner">
                 <div class="footer-col">
-                    <h4>About MisinfoGuard</h4>
+                    <h4>About Factify</h4>
                     <a class="footer-link" href="#">Our Mission</a>
                     <a class="footer-link" href="#">How It Works</a>
                     <a class="footer-link" href="#">Trust & Safety</a>
@@ -551,7 +525,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <div>  <span id="year"></span> MisinfoGuard</div>
+                <div>  <span id="year"></span> Factify</div>
                 <div>Made for safer, informed digital experiences</div>
             </div>
         </div>

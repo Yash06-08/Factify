@@ -435,7 +435,7 @@ const appData = {
   trustedSources: TRUSTED_NEWS_SOURCES,
   languages: {
     en: {
-      title: "MisinfoGuard",
+      title: "Factify",
       tagline: "Professional misinformation detection and digital literacy",
       heroTitle: "Verify content. Build trust. Stay informed.",
       heroSubtitle: "Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels.",
@@ -814,34 +814,15 @@ function navigateToSection(sectionId) {
 
 // Verification functionality
 function initVerification() {
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  const tabContents = document.querySelectorAll('.tab-content');
-  const textInput = document.getElementById('textInput');
   const imageInput = document.getElementById('imageInput');
   const fileUploadArea = document.getElementById('fileUploadArea');
   const imagePreview = document.getElementById('imagePreview');
-  const verifyTextBtn = document.getElementById('analyzeText');
   const verifyImageBtn = document.getElementById('analyzeImage');
-  const clearTextBtn = document.getElementById('clearText');
   const clearImageBtn = document.getElementById('clearImage');
   const copyOcrTextBtn = document.getElementById('copyOcrText');
   const analyzeOcrTextBtn = document.getElementById('analyzeOcrText');
 
-  // Tab switching
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabName = btn.dataset.tab;
-      
-      // Update tab buttons
-      tabBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      // Update tab contents
-      tabContents.forEach(content => content.classList.remove('active'));
-      const targetTab = document.getElementById(`${tabName}-tab`);
-      if (targetTab) targetTab.classList.add('active');
-    });
-  });
+  // No tab switching needed - only image verification available
 
   // File upload functionality
   if (fileUploadArea && imageInput) {
@@ -876,16 +857,6 @@ function initVerification() {
   }
 
   // Analysis buttons
-  if (verifyTextBtn) {
-    verifyTextBtn.addEventListener('click', () => {
-      const text = textInput ? textInput.value.trim() : '';
-      if (text) {
-        analyzeContent(text, 'text');
-      } else {
-        alert('Please enter some text to analyze');
-      }
-    });
-  }
 
   if (verifyImageBtn) {
     verifyImageBtn.addEventListener('click', () => {
@@ -898,19 +869,6 @@ function initVerification() {
   }
 
   // Clear button functionality
-  if (clearTextBtn) {
-    clearTextBtn.addEventListener('click', () => {
-      if (textInput) {
-        textInput.value = '';
-        textInput.focus();
-      }
-      // Clear any existing results
-      const resultsSection = document.getElementById('resultsSection');
-      if (resultsSection) {
-        resultsSection.classList.add('hidden');
-      }
-    });
-  }
 
   if (clearImageBtn) {
     clearImageBtn.addEventListener('click', () => {
@@ -2049,7 +2007,7 @@ class AccessibilityManager {
 
 // Initialize application
 function initApp() {
-  console.log('Initializing MisinfoGuard application...');
+  console.log('Initializing Factify application...');
   // Ensure CSS knows the exact sticky header height
   updateHeaderHeight();
   window.addEventListener('resize', debounce(updateHeaderHeight, 150));
@@ -2079,7 +2037,7 @@ function initApp() {
   // Global accessibility manager reference
   window.accessibilityManager = accessibilityManager;
   
-  console.log('MisinfoGuard application initialized successfully!');
+  console.log('Factify application initialized successfully!');
 }
 
 // Enhanced scroll animations
@@ -2777,7 +2735,7 @@ class FactCheckChatbot {
     }
     
     // General response with enhanced fact-checking
-    return `🤖 **MisinfoGuard Enhanced Fact-Checker**
+    return `🤖 **Factify Enhanced Fact-Checker**
 
 ❓ **FACT-CHECK RATING**: READY TO ANALYZE
 
