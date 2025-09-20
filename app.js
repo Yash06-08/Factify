@@ -2528,70 +2528,80 @@ class FactCheckChatbot {
     const wikiFactCheck = analysis.analysis?.wikiFactCheck || {};
     const finalVerdict = analysis.finalVerdict || {};
     
-    let response = `**Fact-Check Results:**\n\n`;
+    // Determine clear verdict
+    let clearVerdict = 'UNCLEAR';
+    let verdictEmoji = '❓';
     
-    // Final Verdict (most important)
-    if (finalVerdict.verdict) {
-      const verdictEmoji = {
-        'LIKELY_RELIABLE': '✅',
-        'MIXED_SIGNALS': '⚠️',
-        'QUESTIONABLE': '❌',
-        'HIGHLY_UNRELIABLE': '🚫'
-      };
-      
-      response += `🎯 **VERDICT**: ${verdictEmoji[finalVerdict.verdict] || '❓'} ${finalVerdict.verdict.replace(/_/g, ' ')} (${finalVerdict.score}/100)\n\n`;
-    }
-    
-    // Gemini AI Research Findings (enhanced)
-    if (factCheck.webResearch) {
-      response += `🌐 **Web Research**: ${factCheck.webResearch.substring(0, 300)}...\n\n`;
-    }
-    
-    // True/False Rating
     if (wikiFactCheck.trueFalseRating) {
-      const ratingEmoji = {
-        'TRUE': '✅',
-        'FALSE': '❌',
-        'PARTIALLY_TRUE': '⚠️',
-        'MISLEADING': '🔄',
-        'NEEDS_VERIFICATION': '❓',
-        'HIGHLY_QUESTIONABLE': '🚫'
-      };
-      
-      response += `📊 **RATING**: ${ratingEmoji[wikiFactCheck.trueFalseRating] || '❓'} ${wikiFactCheck.trueFalseRating.replace(/_/g, ' ')}\n\n`;
+      switch (wikiFactCheck.trueFalseRating) {
+        case 'TRUE':
+        case 'LIKELY_RELIABLE':
+          clearVerdict = 'RIGHT';
+          verdictEmoji = '✅';
+          break;
+        case 'FALSE':
+        case 'HIGHLY_QUESTIONABLE':
+          clearVerdict = 'WRONG';
+          verdictEmoji = '❌';
+          break;
+        case 'PARTIALLY_TRUE':
+        case 'MISLEADING':
+        case 'NEEDS_VERIFICATION':
+        default:
+          clearVerdict = 'UNCLEAR';
+          verdictEmoji = '⚠️';
+          break;
+      }
+    } else if (finalVerdict.verdict) {
+      switch (finalVerdict.verdict) {
+        case 'LIKELY_RELIABLE':
+          clearVerdict = 'RIGHT';
+          verdictEmoji = '✅';
+          break;
+        case 'HIGHLY_UNRELIABLE':
+        case 'QUESTIONABLE':
+          clearVerdict = 'WRONG';
+          verdictEmoji = '❌';
+          break;
+        default:
+          clearVerdict = 'UNCLEAR';
+          verdictEmoji = '⚠️';
+          break;
+      }
     }
 
-    // Enhanced explanation with Gemini details
-    if (factCheck.detailedExplanation) {
-      response += `📝 **Detailed Analysis**: ${factCheck.detailedExplanation.substring(0, 250)}...\n\n`;
-    } else if (wikiFactCheck.whyWrong && wikiFactCheck.whyWrong.includes('DETAILED EXPLANATION:')) {
-      const briefExplanation = wikiFactCheck.whyWrong.split('DETAILED EXPLANATION:')[1].split('(1)')[0].trim();
-      if (briefExplanation) {
-        response += `❌ **Why Wrong**: ${briefExplanation}\n\n`;
-      }
+    let response = `**VERDICT: ${verdictEmoji} ${clearVerdict}**\n\n`;
+    
+    // Complete statement with explanation
+    let completeStatement = '';
+    
+    if (factCheck.webResearch) {
+      completeStatement = factCheck.webResearch;
+    } else if (factCheck.detailedExplanation) {
+      completeStatement = factCheck.detailedExplanation;
+    } else if (wikiFactCheck.correctFact && wikiFactCheck.correctFact.includes('GIST - RIGHT:')) {
+      completeStatement = wikiFactCheck.correctFact.split('GIST - RIGHT:')[1].trim();
     } else if (wikiFactCheck.whyWrong) {
-      response += `❌ **Why Wrong**: ${wikiFactCheck.whyWrong.substring(0, 150)}...\n\n`;
-    }
-
-    // Current context from Gemini
-    if (factCheck.currentContext) {
-      response += `📅 **Current Context**: ${factCheck.currentContext.substring(0, 200)}...\n\n`;
-    }
-
-    // Correct information (brief)
-    if (wikiFactCheck.correctFact && wikiFactCheck.correctFact.includes('GIST - RIGHT:')) {
-      const correctInfo = wikiFactCheck.correctFact.split('GIST - RIGHT:')[1].trim();
-      if (correctInfo) {
-        response += `✅ **Correct Info**: ${correctInfo.substring(0, 200)}...\n\n`;
+      if (wikiFactCheck.whyWrong.includes('DETAILED EXPLANATION:')) {
+        completeStatement = wikiFactCheck.whyWrong.split('DETAILED EXPLANATION:')[1].split('(1)')[0].trim();
+      } else {
+        completeStatement = wikiFactCheck.whyWrong;
       }
+    } else {
+      completeStatement = 'Analysis completed. Please verify through multiple independent sources.';
     }
-
-    // Top 2 citation links only
+    
+    // Add complete statement
+    response += `${completeStatement}\n\n`;
+    
+    // Add citations on separate lines
     if (wikiFactCheck.citationLinks && wikiFactCheck.citationLinks.length > 0) {
-      response += `📚 **Sources**:\n`;
-      wikiFactCheck.citationLinks.slice(0, 2).forEach((link, index) => {
-        response += `${index + 1}. ${link}\n`;
+      response += `**Citations:**\n`;
+      wikiFactCheck.citationLinks.slice(0, 3).forEach((link, index) => {
+        response += `${link}\n`;
       });
+    } else {
+      response += `**Citations:**\nVerify through WHO, CDC, and established fact-checking organizations\n`;
     }
     
     return response;
@@ -2606,20 +2616,17 @@ class FactCheckChatbot {
       
       // Specific health misinformation patterns
       if (lowerMessage.includes('cure cancer') || lowerMessage.includes('miracle cure')) {
-        response += `❌ **RATING**: FALSE\n\n`;
-        response += `**Why Wrong**: No single "miracle cure" exists for cancer. Cancer comprises 200+ different diseases requiring specific, evidence-based treatments.\n\n`;
-        response += `**Correct Info**: Effective treatments include surgery, chemotherapy, radiation, immunotherapy, and targeted therapy, often combined based on cancer type.\n\n`;
-        response += `📚 **Sources**: cancer.gov, WHO cancer facts\n\n`;
+        response += `**VERDICT: ❌ WRONG**\n\n`;
+        response += `Claims of "miracle cures" for cancer are false because cancer comprises over 200 different diseases, each requiring specific, evidence-based treatments. No single cure exists for all cancers. Legitimate treatments undergo rigorous clinical trials and FDA approval processes.\n\n`;
+        response += `**Citations:**\nhttps://www.cancer.gov/about-cancer/treatment/types\nhttps://www.who.int/news-room/fact-sheets/detail/cancer\n\n`;
       } else if (lowerMessage.includes('vaccine') && (lowerMessage.includes('autism') || lowerMessage.includes('cause'))) {
-        response += `❌ **RATING**: FALSE\n\n`;
-        response += `**Why Wrong**: Original study was retracted for fraud. Multiple large studies of millions of children found no vaccine-autism link.\n\n`;
-        response += `**Correct Info**: Vaccines are safe, effective, and prevent millions of deaths. All major medical organizations confirm safety.\n\n`;
-        response += `📚 **Sources**: CDC vaccine safety, WHO vaccine info\n\n`;
+        response += `**VERDICT: ❌ WRONG**\n\n`;
+        response += `The vaccine-autism link is false. The original 1998 study by Andrew Wakefield was retracted for fraud and data falsification. Multiple large-scale studies involving millions of children across different countries have found no correlation between vaccines and autism. Vaccines are among the safest medical interventions.\n\n`;
+        response += `**Citations:**\nhttps://www.cdc.gov/vaccinesafety/concerns/autism.html\nhttps://www.who.int/news-room/feature-stories/detail/vaccine-safety\n\n`;
       } else {
-        response += `❓ **RATING**: NEEDS VERIFICATION\n\n`;
-        response += `**Why Verify**: Health misinformation can be dangerous to public safety.\n\n`;
-        response += `**Correct Info**: Always verify health information with qualified professionals and reputable organizations.\n\n`;
-        response += `📚 **Sources**: WHO, CDC\n\n`;
+        response += `**VERDICT: ⚠️ UNCLEAR**\n\n`;
+        response += `Health claims require careful verification because medical misinformation can be dangerous to public health and individual safety. Always consult qualified healthcare professionals and verify information through reputable medical organizations.\n\n`;
+        response += `**Citations:**\nhttps://www.who.int/\nhttps://www.cdc.gov/\n\n`;
       }
       
       response += `⚠️ **Important**: Always consult qualified healthcare professionals for medical advice.`;
@@ -2648,19 +2655,17 @@ class FactCheckChatbot {
       let response = `📰 **News Fact-Check**\n\n`;
       
       if (lowerMessage.includes('election fraud')) {
-        response += `❓ **RATING**: NEEDS VERIFICATION\n\n`;
-        response += `**Why Verify**: Claims require substantial evidence. Multiple audits found no systematic fraud.\n\n`;
-        response += `**Correct Info**: Elections have multiple security safeguards and bipartisan oversight.\n\n`;
-        response += `📚 **Sources**: CISA election security, EAC officials\n\n`;
+        response += `**VERDICT: ⚠️ UNCLEAR**\n\n`;
+        response += `Claims of widespread election fraud require substantial evidence and have been extensively investigated. Multiple audits, recounts, and court cases found no evidence of systematic fraud that would change election outcomes. U.S. elections have multiple security safeguards including paper trails, bipartisan oversight, and post-election audits.\n\n`;
+        response += `**Citations:**\nhttps://www.cisa.gov/election-security\nhttps://www.eac.gov/election-officials/election-security\n\n`;
       } else if (lowerMessage.includes('climate change') && lowerMessage.includes('hoax')) {
-        response += `❌ **RATING**: FALSE\n\n`;
-        response += `**Why Wrong**: 97%+ of climate scientists confirm human-caused climate change.\n\n`;
-        response += `**Correct Info**: Climate change is real, supported by extensive peer-reviewed research.\n\n`;
-        response += `📚 **Sources**: NASA climate evidence, IPCC reports\n\n`;
+        response += `**VERDICT: ❌ WRONG**\n\n`;
+        response += `Climate change is not a hoax. Over 97% of actively publishing climate scientists agree that human activities are the primary cause of recent climate change. This consensus is supported by multiple lines of evidence including temperature records, ice core data, and observable environmental changes.\n\n`;
+        response += `**Citations:**\nhttps://climate.nasa.gov/evidence/\nhttps://www.ipcc.ch/reports/\n\n`;
       } else {
-        response += `❓ **RATING**: READY TO ANALYZE\n\n`;
-        response += `**Verify Through**: Multiple independent sources and fact-checkers.\n\n`;
-        response += `📚 **Sources**: FactCheck.org, PolitiFact\n\n`;
+        response += `**VERDICT: ⚠️ UNCLEAR**\n\n`;
+        response += `News content should be verified through multiple independent sources and established fact-checking organizations. Check source credibility, look for corroborating reports, and verify publication dates and author credentials.\n\n`;
+        response += `**Citations:**\nhttps://www.factcheck.org/\nhttps://www.politifact.com/\n\n`;
       }
       
       response += `Share your article for quick analysis!`;
@@ -2672,49 +2677,36 @@ class FactCheckChatbot {
       let response = `📱 **Social Media Fact-Check**\n\n`;
       
       if (lowerMessage.includes('5g') && lowerMessage.includes('covid')) {
-        response += `❌ **RATING**: FALSE\n\n`;
-        response += `**Why Wrong**: Viruses cannot spread through radio waves. 5G and COVID-19 are unrelated.\n\n`;
-        response += `**Correct Info**: COVID-19 spreads through respiratory droplets from infected people.\n\n`;
-        response += `📚 **Sources**: WHO myth-busters, FCC 5G guide\n\n`;
+        response += `**VERDICT: ❌ WRONG**\n\n`;
+        response += `The claim that 5G technology causes or spreads COVID-19 is false. Viruses are biological entities that cannot be transmitted through radio waves or electromagnetic radiation. COVID-19 is caused by the SARS-CoV-2 virus and spreads through respiratory droplets when infected people cough, sneeze, or talk.\n\n`;
+        response += `**Citations:**\nhttps://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters\nhttps://www.fcc.gov/consumers/guides/5g-mobile-wireless-technology\n\n`;
       } else if (lowerMessage.includes('flat earth')) {
-        response += `❌ **RATING**: FALSE\n\n`;
-        response += `**Why Wrong**: Satellite imagery, physics, and navigation systems all confirm Earth is spherical.\n\n`;
-        response += `**Correct Info**: Earth is an oblate spheroid, proven by multiple scientific methods.\n\n`;
-        response += `📚 **Sources**: NASA Earth facts, Earth Observatory\n\n`;
+        response += `**VERDICT: ❌ WRONG**\n\n`;
+        response += `The Earth is not flat. Multiple lines of evidence confirm Earth is an oblate spheroid (slightly flattened sphere), including satellite imagery from multiple countries, physics principles, navigation systems, and astronomical observations. Ships disappear hull-first over the horizon due to Earth's curvature.\n\n`;
+        response += `**Citations:**\nhttps://www.nasa.gov/audience/forstudents/k-4/stories/nasa-knows/what-is-earth-k4.html\nhttps://earthobservatory.nasa.gov/\n\n`;
       } else {
-        response += `❓ **RATING**: READY TO ANALYZE\n\n`;
-        response += `**Verify Through**: Multiple independent sources and fact-checkers.\n\n`;
-        response += `📚 **Sources**: Snopes, FactCheck.org\n\n`;
+        response += `**VERDICT: ⚠️ UNCLEAR**\n\n`;
+        response += `Social media content should be verified through multiple independent sources and established fact-checking organizations. Check if accounts are verified, look for original sources, and use reverse image searches for photos.\n\n`;
+        response += `**Citations:**\nhttps://www.snopes.com/\nhttps://www.factcheck.org/\n\n`;
       }
       
       response += `Share your social media content for quick verification!`;
       return response;
     }
     
-    // General response - clean and concise
+    // General response - clear format
     return `🤖 **Factify Fact-Checker**
 
-❓ **READY TO ANALYZE**
+**VERDICT: ❓ READY TO ANALYZE**
 
-🎯 **What I Do**:
-• ✅/❌ True/False ratings
-• Brief explanations
-• Correct information
-• Reliable source links
+I provide clear fact-checking with complete statements followed by authoritative citations. Each analysis includes a definitive verdict of RIGHT, WRONG, or UNCLEAR based on current evidence from reliable sources.
 
-📊 **I Can Check**:
-• Health claims
-• Political information  
-• Scientific statements
-• News articles
-• Social media posts
+**Citations:**
+https://www.who.int/
+https://www.cdc.gov/
+https://www.factcheck.org/
 
-💡 **Try Me**:
-• "Vaccines cause autism"
-• "Climate change is a hoax"
-• "Check this claim"
-
-**Share any content for quick fact-checking!**`;
+**Share any claim for comprehensive fact-checking with complete analysis and citations!**`;
   }
 
   // Clear chat function
