@@ -363,7 +363,40 @@ class GeminiAPIService {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Analyze this content for misinformation and provide a credibility score (0-100): "${content}"`
+              text: `You are an advanced fact-checking AI with web research capabilities. Analyze this content for misinformation, credibility, and factual accuracy.
+
+              RESEARCH INSTRUCTIONS: Please search and reference current information from authoritative sources including:
+              - Government agencies (WHO, CDC, NIH, NASA, NOAA)
+              - Academic institutions and peer-reviewed journals
+              - Fact-checking organizations (Snopes, FactCheck.org, PolitiFact)
+              - Official news sources and primary documents
+              - Recent scientific studies and reports
+
+              Provide a comprehensive assessment with the following structure:
+
+              **CREDIBILITY SCORE:** [0-100] with clear reasoning
+
+              **WEB RESEARCH FINDINGS:**
+              [Summarize what you found from authoritative sources, include specific examples and recent information]
+
+              **KEY CLAIMS ANALYSIS:**
+              [Break down and verify each main claim with evidence from your research]
+
+              **DETAILED EXPLANATION:**
+              [Elaborate on why claims are true/false with specific evidence and context]
+
+              **CURRENT CONTEXT:**
+              [Any recent developments, updates, or new research on this topic]
+
+              **SOURCE VERIFICATION:**
+              [Evaluate the quality and reliability of sources mentioned in the content]
+
+              **VERIFICATION RECOMMENDATIONS:**
+              [Specific steps users can take to independently verify the information]
+
+              Be thorough in your research and provide specific, current examples from authoritative sources.
+
+              Content to analyze: "${content}"`
             }]
           }]
         })
@@ -373,14 +406,24 @@ class GeminiAPIService {
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No analysis available';
         
-        // Extract credibility score (simple pattern matching)
-        const scoreMatch = text.match(/(\d+)(?:%|\s*(?:out of|\/)\s*100)/i);
+        // Extract credibility score
+        const scoreMatch = text.match(/(?:CREDIBILITY SCORE|credibility score):\s*(\d+)/i);
         const credibilityScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
+        
+        // Extract different sections
+        const webResearch = this.extractSection(text, 'WEB RESEARCH FINDINGS');
+        const detailedExplanation = this.extractSection(text, 'DETAILED EXPLANATION');
+        const currentContext = this.extractSection(text, 'CURRENT CONTEXT');
+        const sourceVerification = this.extractSection(text, 'SOURCE VERIFICATION');
         
         return {
           success: true,
           credibilityScore,
           analysis: text,
+          webResearch: webResearch,
+          detailedExplanation: detailedExplanation,
+          currentContext: currentContext,
+          sourceVerification: sourceVerification,
           confidence: credibilityScore / 100
         };
       } else {
@@ -389,6 +432,13 @@ class GeminiAPIService {
     } catch (error) {
       throw new Error(`Gemini analysis failed: ${error.message}`);
     }
+  }
+
+  // Helper method to extract sections from the response
+  extractSection(text, sectionName) {
+    const regex = new RegExp(`\\*\\*${sectionName}:\\*\\*([\\s\\S]*?)(?=\\*\\*[A-Z\\s]+:\\*\\*|$)`, 'i');
+    const match = text.match(regex);
+    return match ? match[1].trim() : '';
   }
 }
 

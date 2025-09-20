@@ -2542,6 +2542,11 @@ class FactCheckChatbot {
       response += `🎯 **VERDICT**: ${verdictEmoji[finalVerdict.verdict] || '❓'} ${finalVerdict.verdict.replace(/_/g, ' ')} (${finalVerdict.score}/100)\n\n`;
     }
     
+    // Gemini AI Research Findings (enhanced)
+    if (factCheck.webResearch) {
+      response += `🌐 **Web Research**: ${factCheck.webResearch.substring(0, 300)}...\n\n`;
+    }
+    
     // True/False Rating
     if (wikiFactCheck.trueFalseRating) {
       const ratingEmoji = {
@@ -2556,14 +2561,21 @@ class FactCheckChatbot {
       response += `📊 **RATING**: ${ratingEmoji[wikiFactCheck.trueFalseRating] || '❓'} ${wikiFactCheck.trueFalseRating.replace(/_/g, ' ')}\n\n`;
     }
 
-    // Brief explanation
-    if (wikiFactCheck.whyWrong && wikiFactCheck.whyWrong.includes('DETAILED EXPLANATION:')) {
+    // Enhanced explanation with Gemini details
+    if (factCheck.detailedExplanation) {
+      response += `📝 **Detailed Analysis**: ${factCheck.detailedExplanation.substring(0, 250)}...\n\n`;
+    } else if (wikiFactCheck.whyWrong && wikiFactCheck.whyWrong.includes('DETAILED EXPLANATION:')) {
       const briefExplanation = wikiFactCheck.whyWrong.split('DETAILED EXPLANATION:')[1].split('(1)')[0].trim();
       if (briefExplanation) {
         response += `❌ **Why Wrong**: ${briefExplanation}\n\n`;
       }
     } else if (wikiFactCheck.whyWrong) {
       response += `❌ **Why Wrong**: ${wikiFactCheck.whyWrong.substring(0, 150)}...\n\n`;
+    }
+
+    // Current context from Gemini
+    if (factCheck.currentContext) {
+      response += `📅 **Current Context**: ${factCheck.currentContext.substring(0, 200)}...\n\n`;
     }
 
     // Correct information (brief)
