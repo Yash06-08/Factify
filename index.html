@@ -171,6 +171,22 @@
                                 <div class="file-upload__hint">PNG, JPG, JPEG up to 10MB</div>
                             </div>
                             <div id="imagePreview" class="image-preview hidden"></div>
+                            
+                            <!-- OCR Results Section -->
+                            <div id="ocrResults" class="ocr-results hidden">
+                                <div class="ocr-header">
+                                    <h4>📝 Extracted Text (OCR)</h4>
+                                    <span class="ocr-confidence" id="ocrConfidence"></span>
+                                </div>
+                                <div class="ocr-content">
+                                    <textarea id="ocrText" class="ocr-text" readonly placeholder="No text detected in image..."></textarea>
+                                    <div class="ocr-actions">
+                                        <button class="btn btn--sm btn--outline" id="copyOcrText">Copy Text</button>
+                                        <button class="btn btn--sm btn--primary" id="analyzeOcrText">Analyze Extracted Text</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="input-actions">
                                 <button class="btn btn--primary analyze-btn" id="analyzeImage" data-translate="analyzeNow">
                                     Analyze Now

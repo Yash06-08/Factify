@@ -824,6 +824,8 @@ function initVerification() {
   const verifyImageBtn = document.getElementById('analyzeImage');
   const clearTextBtn = document.getElementById('clearText');
   const clearImageBtn = document.getElementById('clearImage');
+  const copyOcrTextBtn = document.getElementById('copyOcrText');
+  const analyzeOcrTextBtn = document.getElementById('analyzeOcrText');
 
   // Tab switching
   tabBtns.forEach(btn => {
@@ -923,10 +925,54 @@ function initVerification() {
       if (fileUploadArea) {
         fileUploadArea.classList.remove('file-uploaded');
       }
+      // Clear OCR results
+      const ocrResults = document.getElementById('ocrResults');
+      const ocrText = document.getElementById('ocrText');
+      const ocrConfidence = document.getElementById('ocrConfidence');
+      if (ocrResults) {
+        ocrResults.classList.add('hidden');
+      }
+      if (ocrText) {
+        ocrText.value = '';
+      }
+      if (ocrConfidence) {
+        ocrConfidence.textContent = '';
+      }
       // Clear any existing results
       const resultsSection = document.getElementById('resultsSection');
       if (resultsSection) {
         resultsSection.classList.add('hidden');
+      }
+    });
+  }
+
+  // OCR button functionality
+  if (copyOcrTextBtn) {
+    copyOcrTextBtn.addEventListener('click', () => {
+      const ocrText = document.getElementById('ocrText');
+      if (ocrText && ocrText.value.trim()) {
+        navigator.clipboard.writeText(ocrText.value).then(() => {
+          // Show temporary feedback
+          const originalText = copyOcrTextBtn.textContent;
+          copyOcrTextBtn.textContent = 'Copied!';
+          setTimeout(() => {
+            copyOcrTextBtn.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy text:', err);
+          alert('Failed to copy text to clipboard');
+        });
+      }
+    });
+  }
+
+  if (analyzeOcrTextBtn) {
+    analyzeOcrTextBtn.addEventListener('click', () => {
+      const ocrText = document.getElementById('ocrText');
+      if (ocrText && ocrText.value.trim()) {
+        analyzeContent(ocrText.value.trim(), 'text');
+      } else {
+        alert('No extracted text to analyze');
       }
     });
   }
@@ -942,10 +988,66 @@ function handleImageUpload(file) {
   if (imagePreview) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+      imagePreview.innerHTML = `
+        <img src="${e.target.result}" alt="Uploaded image" class="preview-image">
+        <div class="image-info">
+          <span class="image-name">${file.name}</span>
+          <span class="image-size">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+        </div>
+      `;
       imagePreview.classList.remove('hidden');
+      
+      // Add uploaded state to file upload area
+      const fileUploadArea = document.getElementById('fileUploadArea');
+      if (fileUploadArea) {
+        fileUploadArea.classList.add('file-uploaded');
+      }
+      
+      // Perform OCR on the uploaded image
+      performOCR(file);
     };
     reader.readAsDataURL(file);
+  }
+}
+
+// Perform OCR on uploaded image
+async function performOCR(file) {
+  const ocrResults = document.getElementById('ocrResults');
+  const ocrText = document.getElementById('ocrText');
+  const ocrConfidence = document.getElementById('ocrConfidence');
+  
+  if (!ocrResults || !ocrText || !ocrConfidence) return;
+  
+  // Show OCR section with loading state
+  ocrResults.classList.remove('hidden');
+  ocrText.placeholder = 'Extracting text from image...';
+  ocrConfidence.textContent = 'Processing...';
+  
+  try {
+    // Use API Manager's OCR service if available
+    if (typeof apiManager !== 'undefined' && apiManager !== null && apiManager.isConfigured('ocr')) {
+      const result = await apiManager.services.ocr.extractText(file);
+      
+      if (result.success && result.text.trim()) {
+        ocrText.value = result.text.trim();
+        ocrConfidence.textContent = `Confidence: ${Math.round(result.confidence * 100)}%`;
+        ocrText.placeholder = 'No text detected in image...';
+      } else {
+        ocrText.value = '';
+        ocrConfidence.textContent = 'No text detected';
+        ocrText.placeholder = 'No text detected in image...';
+      }
+    } else {
+      // Fallback: Show message about OCR service
+      ocrText.value = '';
+      ocrConfidence.textContent = 'OCR service not configured';
+      ocrText.placeholder = 'OCR service not available. Please configure OCR.space API key in config.js';
+    }
+  } catch (error) {
+    console.error('OCR failed:', error);
+    ocrText.value = '';
+    ocrConfidence.textContent = 'OCR failed';
+    ocrText.placeholder = 'Failed to extract text. Please try again.';
   }
 }
 
@@ -2379,32 +2481,52 @@ class FactCheckChatbot {
     
     let response = `**Analysis Results:**\n\n`;
     
-    // Credibility with verdict
+    // Credibility with verdict and explanation
     if (factCheck.credibilityScore) {
       const score = factCheck.credibilityScore;
       const verdict = score > 70 ? '✅ Likely Reliable' : score > 40 ? '⚠️ Questionable' : '❌ Likely Unreliable';
-      response += `🎯 ${verdict} (${score}/100)\n`;
+      response += `🎯 **Verdict**: ${verdict} (${score}/100)\n`;
+      
+      if (score > 70) {
+        response += `This content appears credible based on AI analysis.\n`;
+      } else if (score > 40) {
+        response += `This content has mixed signals - proceed with caution.\n`;
+      } else {
+        response += `This content shows multiple red flags for reliability.\n`;
+      }
     }
     
-    // Sentiment (concise)
+    // Sentiment with context
     if (sentiment.sentiment) {
       const emoji = sentiment.sentiment === 'POSITIVE' ? '😊' : sentiment.sentiment === 'NEGATIVE' ? '😟' : '😐';
-      response += `${emoji} ${sentiment.sentiment} tone\n`;
+      const confidence = Math.round(sentiment.confidence * 100);
+      response += `${emoji} **Tone**: ${sentiment.sentiment} (${confidence}% confidence)\n`;
     }
     
-    // Classification (concise)
+    // Classification with explanation
     if (classification.classification) {
       const emoji = classification.classification === 'factual' ? '📊' : classification.classification === 'opinion' ? '💭' : '⚠️';
-      response += `${emoji} ${classification.classification.toUpperCase()} content\n\n`;
+      const confidence = Math.round(classification.confidence * 100);
+      response += `${emoji} **Type**: ${classification.classification.toUpperCase()} content (${confidence}% confidence)\n\n`;
     }
     
-    // Key recommendations (shortened)
-    response += `💡 **Quick Tips:**\n`;
-    if (classification.classification === 'misleading') {
-      response += `• ⚠️ HIGH CAUTION - Potentially misleading\n`;
+    // AI analysis summary
+    if (factCheck.analysis) {
+      response += `🔍 **AI Analysis**: ${factCheck.analysis}\n\n`;
     }
-    response += `• Verify with 2-3 reliable sources\n`;
-    response += `• Check publication date & author\n`;
+    
+    // Enhanced recommendations
+    response += `💡 **Recommendations:**\n`;
+    if (classification.classification === 'misleading') {
+      response += `• ⚠️ HIGH CAUTION - Content flagged as potentially misleading\n`;
+    }
+    response += `• Cross-reference with 2-3 reliable, independent sources\n`;
+    response += `• Check the original source's credibility and bias\n`;
+    response += `• Verify publication date and author credentials\n`;
+    
+    if (sentiment.sentiment === 'NEGATIVE') {
+      response += `• 🧠 Consider emotional language that may influence judgment\n`;
+    }
     
     return response;
   }
@@ -2416,23 +2538,32 @@ class FactCheckChatbot {
     if (lowerMessage.includes('health') || lowerMessage.includes('medical') || lowerMessage.includes('cure') || lowerMessage.includes('vaccine')) {
       return `🏥 **Health Information Analysis**
 
-⚠️ Always consult healthcare professionals for medical advice.
+⚠️ **Important**: Always consult qualified healthcare professionals for medical advice.
 
-🔍 **Quick Check**: 
-• Verify with WHO, CDC, or NHS
-• Look for peer-reviewed studies
-• Check source credentials
+🔍 **Verification Steps**: 
+• Check with official health organizations (WHO, CDC, NHS)
+• Look for peer-reviewed scientific studies and clinical trials
+• Verify the author's medical credentials and expertise
+• Be cautious of sensational or "miracle cure" claims
 
-💡 **Tips**: Cross-reference medical sources, avoid miracle cure claims.`;
+💡 **Red Flags**: Avoid sources that promise instant cures, use fear tactics, or lack proper citations to medical research.`;
     }
     
     // Scam detection
     if (lowerMessage.includes('scam') || lowerMessage.includes('fraud') || lowerMessage.includes('money') || lowerMessage.includes('winner')) {
       return `🚨 **Scam Detection Analysis**
 
-**Red Flags**: Urgency tactics, personal info requests, too-good-to-be-true offers
+**Common Red Flags**: 
+• Urgency tactics ("Act now!", "Limited time offer!")
+• Requests for personal or financial information
+• Too-good-to-be-true promises or offers
+• Poor grammar, spelling, or unprofessional communication
 
-🛡️ **Tips**: Never share personal info, verify through official channels, report suspicious content.`;
+🛡️ **Protection Tips**: 
+• Never share personal information with unknown contacts
+• Verify independently through official channels
+• Be skeptical of unexpected winnings or offers
+• Report suspicious content to relevant authorities`;
     }
     
     // News verification
