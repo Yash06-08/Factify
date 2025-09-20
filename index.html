@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MisinfoGuard - Professional misinformation detection and digital literacy</title>
+    <meta name="description" content="Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels with 99.8% accuracy.">
+    <meta name="keywords" content="misinformation, fact-checking, digital literacy, scam detection, AI verification">
+    <link rel="stylesheet" href="style.css">
+    <!-- Accessibility improvements -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <!-- VS Code-like Animated Background -->
+    <div class="vscode-background">
+        <div class="code-lines" id="codeLines"></div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="container">
+            <div class="header__content">
+                <div class="header__logo">
+                    <h1 class="logo__title">MisinfoGuard</h1>
+                </div>
+                <nav class="header__nav" role="navigation" aria-label="Main navigation">
+                    <a href="#home" class="nav__link active" aria-current="page">Home</a>
+                    <a href="#verify" class="nav__link">Verify Content</a>
+                    <a href="#news" class="nav__link">Digital Literacy News</a>
+                    <a href="#bot" class="nav__link">Mobile Bot</a>
+                </nav>
+                <div class="header__actions">
+                    <button class="btn btn--sm btn--outline theme-toggle" id="themeToggle" title="Toggle dark/light theme" aria-label="Toggle between dark and light theme">
+                        <span class="theme-icon" aria-hidden="true">🌙</span>
+                    </button>
+                    <button class="btn btn--sm btn--outline language-toggle" id="languageToggle" aria-label="Switch language between English and Hindi">EN / हिं</button>
+                    <button class="btn btn--sm btn--primary" id="getStartedBtn" aria-label="Get started with content verification">
+                        <span>Get Started</span>
+                        <span class="btn-icon" aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section" role="main" aria-labelledby="hero-title">
+        <div class="container">
+            <div class="hero">
+                <div class="hero__content">
+                    <div class="hero__badge">
+                        <span class="badge badge--new" aria-label="New feature">New</span>
+                        <span>AI-Powered Misinformation Detection</span>
+                    </div>
+                    <h1 id="hero-title" class="hero__title">Verify content. Build trust. Stay informed.</h1>
+                    <p class="hero__subtitle">Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels with 99.8% accuracy.</p>
+                    <div class="hero__actions">
+                        <button class="btn btn--lg btn--primary" id="verifyContentBtn" aria-describedby="verify-description">
+                            <span>Start Verification</span>
+                            <span class="btn-icon" aria-hidden="true">⚡</span>
+                        </button>
+                        <div id="verify-description" class="sr-only">Navigate to content verification tools</div>
+                        <button class="btn btn--lg btn--outline" id="learnMoreBtn" aria-describedby="learn-description">
+                            <span>Explore Learning Center</span>
+                            <span class="btn-icon" aria-hidden="true">📚</span>
+                        </button>
+                        <div id="learn-description" class="sr-only">Browse educational resources about digital literacy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Statistics -->
+    <section id="home-stats" class="stats-section">
+        <div class="container">
+            <div class="stats-header">
+                <h2>Real-Time Impact</h2>
+                <p>Live statistics from our global misinformation detection network</p>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card" data-stat="verifications">
+                    <div class="stat-card__icon">🔍</div>
+                    <div class="stat-card__number" data-target="2300000">0</div>
+                    <div class="stat-card__label">Total Verifications</div>
+                    <div class="stat-card__trend">+12% this week</div>
+                    <div class="stat-card__chart" id="verificationsChart"></div>
+                </div>
+                <div class="stat-card" data-stat="scams">
+                    <div class="stat-card__icon">🛡️</div>
+                    <div class="stat-card__number" data-target="156000">0</div>
+                    <div class="stat-card__label">Scams Detected</div>
+                    <div class="stat-card__trend">+8% this week</div>
+                    <div class="stat-card__chart" id="scamsChart"></div>
+                </div>
+                <div class="stat-card" data-stat="users">
+                    <div class="stat-card__icon">👥</div>
+                    <div class="stat-card__number" data-target="890000">0</div>
+                    <div class="stat-card__label">Users Educated</div>
+                    <div class="stat-card__trend">+15% this week</div>
+                    <div class="stat-card__chart" id="usersChart"></div>
+                </div>
+                <div class="stat-card" data-stat="accuracy">
+                    <div class="stat-card__icon">🎯</div>
+                    <div class="stat-card__number" data-target="99.8">0</div>
+                    <div class="stat-card__suffix">%</div>
+                    <div class="stat-card__label">Accuracy Rate</div>
+                    <div class="stat-card__trend">+0.2% this month</div>
+                    <div class="stat-card__chart" id="accuracyChart"></div>
+                </div>
+            </div>
+            <div class="live-feed">
+                <h3>Live Verification Feed</h3>
+                <div class="feed-container" id="liveFeed">
+                    <div class="feed-item">
+                        <span class="feed-status verified">✓</span>
+                        <span class="feed-text">Health claim verified from WHO source</span>
+                        <span class="feed-time">2s ago</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+        <!-- Main Verification Interface -->
+        <section id="verify" class="verification-section section hidden">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Content Verification</h2>
+                    <p>Paste suspicious text or upload an image to check for misinformation</p>
+                </div>
+                
+                <div class="verification-interface">
+                    <button class="tab-btn active" data-tab="text" data-translate="checkText">Check Text</button>
+                    <button class="tab-btn" data-tab="image" data-translate="checkImage">Check Image</button>
+                </div>
+
+                <div class="tab-content-wrapper">
+                    <!-- Text Tab -->
+                    <div id="text-tab" class="tab-content active">
+                        <div class="input-card">
+                            <textarea 
+                                id="textInput" 
+                                class="form-control text-input" 
+                                placeholder="Paste suspicious message here..."
+                                data-translate-placeholder="pasteMessage"
+                                rows="6"
+                            ></textarea>
+                            <div class="input-actions">
+                                <button class="btn btn--primary analyze-btn" id="analyzeText" data-translate="analyzeNow">
+                                    Analyze Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Tab -->
+                    <div id="image-tab" class="tab-content">
+                        <div class="input-card">
+                            <input type="file" id="imageInput" accept="image/*" class="file-input" />
+                            <div class="file-upload" id="fileUploadArea">
+                                <div class="file-upload__icon">📷</div>
+                                <div class="file-upload__text">
+                                    <strong>Click to upload</strong> or drag and drop your image here
+                                </div>
+                                <div class="file-upload__hint">PNG, JPG, JPEG up to 10MB</div>
+                            </div>
+                            <div id="imagePreview" class="image-preview hidden"></div>
+                            <div class="input-actions">
+                                <button class="btn btn--primary analyze-btn" id="analyzeImage" data-translate="analyzeNow">
+                                    Analyze Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Processing State -->
+                <div id="processingState" class="processing-state hidden">
+                    <div class="processing-card">
+                        <div class="processing-indicator"></div>
+                        <h3>Analyzing Content...</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="results-section hidden">
+                    <div class="results-card">
+                        <div class="results-header">
+                            <h3>Verification Results</h3>
+                        </div>
+                        <div class="confidence-meter">
+                            <div class="confidence-label">Confidence Level</div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidenceFill"></div>
+                            </div>
+                            <div class="confidence-value" id="confidenceValue">0%</div>
+                        </div>
+                        <div class="verdict-display" id="verdictDisplay">
+                            <div class="verdict-icon" id="verdictIcon">⚠️</div>
+                            <div class="verdict-text" id="verdictText">Analysis Complete</div>
+                        </div>
+                        <div class="analysis-explanation" id="analysisExplanation"></div>
+                        <div class="recommendation-tips">
+                            <h4>Recommendations</h4>
+                            <ul id="recommendationsList"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Fact-Check Chatbot -->
+                <div class="chatbot-container" id="chatbotContainer">
+                    <div class="chatbot-header">
+                        <div class="chatbot-avatar">🤖</div>
+                        <div>
+                            <h3 class="chatbot-title">AI Fact-Check Assistant</h3>
+                            <div class="chatbot-status">
+                                <div class="status-indicator"></div>
+                                Online
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message">
+                            <div class="message-bubble">
+                                Hi! I'm your AI fact-checking assistant. I can help you verify information, check sources, and provide detailed analysis. What would you like to fact-check today?
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="suggested-questions">
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this news article credible?')">Is this news article credible?</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Check this health claim')">Check this health claim</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Verify this social media post')">Verify this social media post</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this a scam?')">Is this a scam?</div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <textarea 
+                            class="chat-input" 
+                            id="chatInput" 
+                            placeholder="Ask me to fact-check anything..."
+                            rows="1"
+                        ></textarea>
+                        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Digital Literacy News Center -->
+    <section id="news" class="news-section section hidden">
+        <div class="container">
+            <div class="news-header">
+                <h2>Digital Literacy News Center</h2>
+                <p>Stay informed about the latest in misinformation detection, digital literacy, and cybersecurity</p>
+            </div>
+
+            <!-- News Categories -->
+            <div class="news-categories">
+                <button class="category-tab active" data-category="all">All Articles</button>
+                <button class="category-tab" data-category="health">Health</button>
+                <button class="category-tab" data-category="politics">Politics</button>
+                <button class="category-tab" data-category="financial">Financial</button>
+                <button class="category-tab" data-category="technology">Technology</button>
+                <button class="category-tab" data-category="education">Education</button>
+                <button class="category-tab" data-category="ai_deepfakes">AI & Deepfakes</button>
+            </div>
+
+            <div class="news-content">
+                <!-- Featured Articles -->
+                <div class="featured-section">
+                    <h3>Featured Articles</h3>
+                    <div class="featured-articles" id="featuredArticles"></div>
+                </div>
+
+                <!-- Main News Grid -->
+                <div class="news-layout">
+                    <div class="news-main">
+                        <div class="news-controls">
+                            <div class="results-count" id="resultsCount"></div>
+                            <div class="view-toggle">
+                                <button class="view-btn active" data-view="grid" title="Grid View">⬚</button>
+                                <button class="view-btn" data-view="list" title="List View">☰</button>
+                            </div>
+                        </div>
+                        <div class="articles-grid" id="articlesGrid"></div>
+                        <div class="pagination" id="pagination"></div>
+                    </div>
+                    
+                    <!-- News Sidebar -->
+                    <div class="news-sidebar">
+                        <div class="sidebar-section">
+                            <h4>Search Articles</h4>
+                            <div class="search-box">
+                                <input type="text" class="form-control search-input" placeholder="Search articles..." id="searchInput">
+                                <button class="search-btn" id="searchBtn">
+                                    <span class="search-icon">🔍</span>
+                                </button>
+                            </div>
+                            <div class="search-filters">
+                                <select class="form-control" id="sortFilter">
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="relevance">Most Relevant</option>
+                                    <option value="trending">Trending</option>
+                                </select>
+                                <select class="form-control" id="sourceFilter">
+                                    <option value="all">All Sources</option>
+                                    <option value="reuters">Reuters</option>
+                                    <option value="bbc">BBC</option>
+                                    <option value="guardian">The Guardian</option>
+                                    <option value="who">WHO</option>
+                                    <option value="cdc">CDC</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        
+                        <div class="sidebar-section">
+                            <h4>Recent Articles</h4>
+                            <div class="recent-articles" id="recentArticles"></div>
+                        </div>
+                        
+                        <div class="sidebar-section">
+                            <h4>Trusted Sources</h4>
+                            <div class="trusted-sources" id="trustedSources"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bot Integration Section -->
+    <section id="bot" class="bot-section section hidden">
+        <div class="container">
+            <div class="section-header">
+                <h2>Continue on Mobile</h2>
+                <p>Access MisinfoGuard verification tools directly from your messaging apps</p>
+            </div>
+
+            <div class="bot-integration">
+                <div class="bot-card">
+                    <div class="bot-card__header">
+                        <div class="bot-icon">💬</div>
+                        <h3>WhatsApp Verification</h3>
+                    </div>
+                    <div class="bot-card__body">
+                        <p>Send suspicious messages directly to our WhatsApp bot for instant verification</p>
+                        <div class="contact-info">
+                            <strong>+91 98765 43210</strong>
+                        </div>
+                    </div>
+                    <div class="bot-card__actions">
+                        <a href="https://wa.me/919876543210" target="_blank" class="btn btn--primary">
+                            Start WhatsApp Chat
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bot-card">
+                    <div class="bot-card__header">
+                        <div class="bot-icon">📱</div>
+                        <h3>Telegram Bot</h3>
+                    </div>
+                    <div class="bot-card__body">
+                        <p>Use our Telegram bot for quick content verification and educational resources</p>
+                        <div class="contact-info">
+                            <strong>@MisinfoGuardBot</strong>
+                        </div>
+                    </div>
+                    <div class="bot-card__actions">
+                        <a href="https://t.me/MisinfoGuardBot" target="_blank" class="btn btn--primary">
+                            Open Telegram Bot
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Site Footer -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="container">
+            <div class="footer-inner">
+                <div class="footer-col">
+                    <h4>About MisinfoGuard</h4>
+                    <a class="footer-link" href="#">Our Mission</a>
+                    <a class="footer-link" href="#">How It Works</a>
+                    <a class="footer-link" href="#">Trust & Safety</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Help & Support</h4>
+                    <a class="footer-link" href="#">FAQs</a>
+                    <a class="footer-link" href="#">Contact Support</a>
+                    <a class="footer-link" href="#">Report Misinformation</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <a class="footer-link" href="#">Learning Center</a>
+                    <a class="footer-link" href="#">Digital Literacy Guides</a>
+                    <a class="footer-link" href="#">Trusted Sources</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <a class="footer-link" href="#">Privacy Policy</a>
+                    <a class="footer-link" href="#">Terms of Use</a>
+                    <a class="footer-link" href="#">Accessibility</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div>  <span id="year"></span> MisinfoGuard</div>
+                <div>Made for safer, informed digital experiences</div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="backend.js"></script>
+    <script src="app.js"></script>
+    <script>
+      // Set current year in footer
+      (function(){
+        var y = document.getElementById('year');
+        if (y) y.textContent = new Date().getFullYear();
+      })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2593 @@
+// Real News API Configuration
+const NEWS_CONFIG = {
+  // News API (free tier allows 1000 requests/day)
+  newsApi: {
+    key: '4e2778cafef34d099fdd56efb8beda69', // Replace with actual API key
+    baseUrl: 'https://newsapi.org/v2',
+    sources: {
+      health: 'medical-news-today,healthline',
+      politics: 'bbc-news,reuters,associated-press',
+      financial: 'financial-times,bloomberg,reuters',
+      technology: 'techcrunch,ars-technica,wired',
+      general: 'bbc-news,reuters,associated-press,npr'
+    }
+  },
+  // Guardian API (free with registration)
+  guardian: {
+    key: 'YOUR_GUARDIAN_API_KEY', // Replace with actual API key
+    baseUrl: 'https://content.guardianapis.com',
+    sections: {
+      health: 'society,science',
+      politics: 'politics,world',
+      financial: 'business,money',
+      technology: 'technology,science',
+      general: 'world,uk-news'
+    }
+  },
+  // Reuters API (for fact-checking content)
+  reuters: {
+    baseUrl: 'https://www.reuters.com/arc/outboundfeeds/rss/',
+    feeds: {
+      factCheck: 'category/fact-check',
+      health: 'category/health',
+      politics: 'category/politics-news',
+      technology: 'category/technology'
+    }
+  }
+};
+
+// Measure sticky header and expose height to CSS as --header-height
+function updateHeaderHeight() {
+  const header = document.querySelector('.header');
+  if (!header) return;
+  const height = header.offsetHeight;
+  document.documentElement.style.setProperty('--header-height', `${height}px`);
+}
+
+// Small debounce utility for resize events
+function debounce(fn, delay) {
+  let t;
+  return function (...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+// Fallback trusted news sources for demo
+const TRUSTED_NEWS_SOURCES = {
+  factCheck: [
+    {
+      name: 'Reuters Fact Check',
+      url: 'https://www.reuters.com/fact-check/',
+      description: 'Professional fact-checking from Reuters news agency'
+    },
+    {
+      name: 'AP Fact Check',
+      url: 'https://apnews.com/hub/ap-fact-check',
+      description: 'Associated Press fact-checking division'
+    },
+    {
+      name: 'BBC Reality Check',
+      url: 'https://www.bbc.com/news/reality_check',
+      description: 'BBC\'s dedicated fact-checking team'
+    },
+    {
+      name: 'Snopes',
+      url: 'https://www.snopes.com/',
+      description: 'Independent fact-checking organization'
+    },
+    {
+      name: 'PolitiFact',
+      url: 'https://www.politifact.com/',
+      description: 'Pulitzer Prize-winning fact-checking site'
+    }
+  ],
+  health: [
+    {
+      name: 'WHO Health Updates',
+      url: 'https://www.who.int/news',
+      description: 'Official World Health Organization news and updates'
+    },
+    {
+      name: 'CDC Health Information',
+      url: 'https://www.cdc.gov/media/releases/',
+      description: 'Centers for Disease Control and Prevention'
+    },
+    {
+      name: 'NHS Health News',
+      url: 'https://www.nhs.uk/news/',
+      description: 'UK National Health Service official news'
+    }
+  ],
+  technology: [
+    {
+      name: 'MIT Technology Review',
+      url: 'https://www.technologyreview.com/',
+      description: 'Authoritative technology journalism from MIT'
+    },
+    {
+      name: 'IEEE Spectrum',
+      url: 'https://spectrum.ieee.org/',
+      description: 'Professional engineering and technology news'
+    }
+  ]
+};
+
+// News API Service
+class NewsAPIService {
+  constructor() {
+    this.cache = new Map();
+    this.cacheExpiry = 30 * 60 * 1000; // 30 minutes
+  }
+
+  async fetchNews(category = 'general', sources = null) {
+    const cacheKey = `${category}-${sources || 'default'}`;
+    const cached = this.cache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+      return cached.data;
+    }
+
+    try {
+      // Try multiple APIs in order of preference
+      let articles = await this.fetchFromNewsAPI(category, sources);
+      
+      if (!articles || articles.length === 0) {
+        articles = await this.fetchFromGuardian(category);
+      }
+      
+      if (!articles || articles.length === 0) {
+        articles = this.getFallbackNews(category);
+      }
+
+      // Cache the results
+      this.cache.set(cacheKey, {
+        timestamp: Date.now(),
+        data: articles
+      });
+
+      return articles;
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      return this.getFallbackNews(category);
+    }
+  }
+
+  async fetchFromNewsAPI(category, sources) {
+    // Note: In production, you'd need a valid API key
+    // For demo purposes, we'll simulate API calls
+    if (!NEWS_CONFIG.newsApi.key || NEWS_CONFIG.newsApi.key === 'YOUR_NEWS_API_KEY') {
+      return null; // API key not configured
+    }
+
+    const sourcesParam = sources || NEWS_CONFIG.newsApi.sources[category] || NEWS_CONFIG.newsApi.sources.general;
+    const url = `${NEWS_CONFIG.newsApi.baseUrl}/top-headlines?sources=${sourcesParam}&apiKey=${NEWS_CONFIG.newsApi.key}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    return data.articles?.map(article => this.normalizeArticle(article, 'NewsAPI')) || [];
+  }
+
+  async fetchFromGuardian(category) {
+    // Note: In production, you'd need a valid API key
+    if (!NEWS_CONFIG.guardian.key || NEWS_CONFIG.guardian.key === 'YOUR_GUARDIAN_API_KEY') {
+      return null; // API key not configured
+    }
+
+    const section = NEWS_CONFIG.guardian.sections[category] || NEWS_CONFIG.guardian.sections.general;
+    const url = `${NEWS_CONFIG.guardian.baseUrl}/search?section=${section}&api-key=${NEWS_CONFIG.guardian.key}&show-fields=headline,thumbnail,short-url`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    return data.response?.results?.map(article => this.normalizeArticle(article, 'Guardian')) || [];
+  }
+
+  normalizeArticle(article, source) {
+    switch (source) {
+      case 'NewsAPI':
+        return {
+          id: this.generateId(),
+          headline: article.title,
+          excerpt: article.description || '',
+          category: this.categorizArticle(article.title + ' ' + (article.description || '')),
+          author: article.author || 'News Staff',
+          date: new Date(article.publishedAt).toISOString().split('T')[0],
+          readTime: this.estimateReadTime(article.description || ''),
+          trending: false,
+          url: article.url,
+          imageUrl: article.urlToImage,
+          source: article.source?.name || 'News Source',
+          verified: true
+        };
+      case 'Guardian':
+        return {
+          id: this.generateId(),
+          headline: article.webTitle,
+          excerpt: article.fields?.headline || article.webTitle,
+          category: this.categorizArticle(article.webTitle),
+          author: 'Guardian Staff',
+          date: new Date(article.webPublicationDate).toISOString().split('T')[0],
+          readTime: '3 min read',
+          trending: false,
+          url: article.webUrl,
+          imageUrl: article.fields?.thumbnail,
+          source: 'The Guardian',
+          verified: true
+        };
+      default:
+        return article;
+    }
+  }
+
+  categorizArticle(text) {
+    const healthKeywords = ['health', 'medical', 'covid', 'vaccine', 'disease', 'treatment', 'hospital', 'doctor'];
+    const politicsKeywords = ['politics', 'election', 'government', 'policy', 'parliament', 'congress', 'vote'];
+    const financialKeywords = ['finance', 'economy', 'bank', 'market', 'investment', 'crypto', 'stock', 'trading'];
+    const techKeywords = ['technology', 'tech', 'ai', 'artificial intelligence', 'software', 'computer', 'digital', 'cyber'];
+    
+    const lowerText = text.toLowerCase();
+    
+    if (healthKeywords.some(keyword => lowerText.includes(keyword))) return 'Health';
+    if (politicsKeywords.some(keyword => lowerText.includes(keyword))) return 'Politics';
+    if (financialKeywords.some(keyword => lowerText.includes(keyword))) return 'Financial';
+    if (techKeywords.some(keyword => lowerText.includes(keyword))) return 'Technology';
+    
+    return 'General';
+  }
+
+  generateId() {
+    return Date.now() + Math.random().toString(36).substr(2, 9);
+  }
+
+  estimateReadTime(text) {
+    const wordsPerMinute = 200;
+    const wordCount = text.split(' ').length;
+    const minutes = Math.ceil(wordCount / wordsPerMinute);
+    return `${minutes} min read`;
+  }
+
+  getFallbackNews(category) {
+    // Enhanced fallback with more realistic and diverse content
+    const fallbackArticles = {
+      health: [
+        {
+          id: 'health_1',
+          headline: 'WHO Releases New Guidelines for Digital Health Misinformation Detection',
+          excerpt: 'World Health Organization announces comprehensive framework for identifying and combating health misinformation across digital platforms, with focus on social media verification.',
+          category: 'Health',
+          author: 'Dr. Sarah Chen, WHO Digital Health Division',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
+          readTime: '5 min read',
+          trending: true,
+          url: 'https://www.who.int/news/item/digital-health-misinformation-guidelines',
+          source: 'World Health Organization',
+          verified: true
+        },
+        {
+          id: 'health_2',
+          headline: 'Stanford Study: AI Tool Achieves 94% Accuracy in Medical Misinformation Detection',
+          excerpt: 'Researchers at Stanford Medicine develop machine learning algorithm that can identify false medical claims with unprecedented accuracy, focusing on vaccine and treatment misinformation.',
+          category: 'Health',
+          author: 'Dr. Michael Rodriguez, Stanford Medicine',
+          date: new Date(Date.now() - 172800000).toISOString().split('T')[0], // 2 days ago
+          readTime: '7 min read',
+          trending: true,
+          url: 'https://med.stanford.edu/news/medical-misinformation-ai-detection',
+          source: 'Stanford Medicine',
+          verified: true
+        },
+        {
+          id: 'health_3',
+          headline: 'CDC Partners with Social Media Platforms to Combat Health Misinformation',
+          excerpt: 'Centers for Disease Control announces new collaboration agreements with major social media companies to implement real-time fact-checking for health-related content.',
+          category: 'Health',
+          author: 'CDC Communications Team',
+          date: new Date(Date.now() - 259200000).toISOString().split('T')[0], // 3 days ago
+          readTime: '4 min read',
+          trending: false,
+          url: 'https://www.cdc.gov/media/releases/social-media-health-misinformation',
+          source: 'CDC',
+          verified: true
+        }
+      ],
+      politics: [
+        {
+          id: 'politics_1',
+          headline: 'European Union Implements Comprehensive Digital Services Act for Misinformation Control',
+          excerpt: 'EU\'s Digital Services Act now requires major platforms to implement robust misinformation detection systems, with significant penalties for non-compliance.',
+          category: 'Politics',
+          author: 'Reuters Brussels Bureau',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          readTime: '6 min read',
+          trending: true,
+          url: 'https://www.reuters.com/world/europe/eu-digital-services-act-misinformation',
+          source: 'Reuters',
+          verified: true
+        },
+        {
+          id: 'politics_2',
+          headline: 'Bipartisan US Senate Committee Proposes New Framework for Election Misinformation Prevention',
+          excerpt: 'Senate Intelligence Committee releases bipartisan recommendations for combating election-related misinformation, including real-time verification systems.',
+          category: 'Politics',
+          author: 'Associated Press Congressional Team',
+          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+          readTime: '8 min read',
+          trending: true,
+          url: 'https://apnews.com/article/senate-election-misinformation-framework',
+          source: 'Associated Press',
+          verified: true
+        }
+      ],
+      financial: [
+        {
+          id: 'financial_1',
+          headline: 'Bank of England Warns of Cryptocurrency Scam Surge Targeting Social Media Users',
+          excerpt: 'Central bank reports 300% increase in crypto-related fraud, launches public awareness campaign about investment scam red flags and verification methods.',
+          category: 'Financial',
+          author: 'Financial Times Banking Desk',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          readTime: '5 min read',
+          trending: true,
+          url: 'https://www.ft.com/content/bank-england-crypto-scam-warning',
+          source: 'Financial Times',
+          verified: true
+        },
+        {
+          id: 'financial_2',
+          headline: 'SEC Introduces AI-Powered System to Detect Investment Fraud on Social Platforms',
+          excerpt: 'Securities and Exchange Commission deploys advanced machine learning tools to identify and flag fraudulent investment schemes spreading through social media.',
+          category: 'Financial',
+          author: 'Bloomberg Regulatory Team',
+          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+          readTime: '6 min read',
+          trending: false,
+          url: 'https://www.bloomberg.com/news/articles/sec-ai-investment-fraud-detection',
+          source: 'Bloomberg',
+          verified: true
+        }
+      ],
+      technology: [
+        {
+          id: 'tech_1',
+          headline: 'OpenAI and Meta Collaborate on Advanced Deepfake Detection Technology',
+          excerpt: 'Leading AI companies announce joint research initiative to develop next-generation deepfake detection tools, with 99.7% accuracy in identifying synthetic media.',
+          category: 'Technology',
+          author: 'TechCrunch AI Team',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          readTime: '7 min read',
+          trending: true,
+          url: 'https://techcrunch.com/openai-meta-deepfake-detection-collaboration',
+          source: 'TechCrunch',
+          verified: true
+        },
+        {
+          id: 'tech_2',
+          headline: 'MIT Researchers Develop Real-Time Audio Deepfake Detection System',
+          excerpt: 'Massachusetts Institute of Technology unveils breakthrough technology that can identify AI-generated audio in real-time, addressing voice cloning scam concerns.',
+          category: 'Technology',
+          author: 'MIT Technology Review',
+          date: new Date(Date.now() - 172800000).toISOString().split('T')[0],
+          readTime: '5 min read',
+          trending: true,
+          url: 'https://www.technologyreview.com/mit-audio-deepfake-detection',
+          source: 'MIT Technology Review',
+          verified: true
+        }
+      ],
+      education: [
+        {
+          id: 'edu_1',
+          headline: 'UNESCO Launches Global Digital Literacy Initiative for Misinformation Awareness',
+          excerpt: 'United Nations Educational, Scientific and Cultural Organization announces comprehensive program to teach digital literacy and critical thinking skills in schools worldwide.',
+          category: 'Education',
+          author: 'UNESCO Communications',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          readTime: '4 min read',
+          trending: false,
+          url: 'https://en.unesco.org/news/global-digital-literacy-misinformation-initiative',
+          source: 'UNESCO',
+          verified: true
+        }
+      ],
+      ai_deepfakes: [
+        {
+          id: 'ai_1',
+          headline: 'Google DeepMind Achieves Breakthrough in Real-Time Deepfake Video Detection',
+          excerpt: 'Research team develops neural network capable of detecting deepfake videos with 99.9% accuracy in real-time, addressing growing concerns about synthetic media.',
+          category: 'AI & Deepfakes',
+          author: 'Google DeepMind Research Team',
+          date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+          readTime: '6 min read',
+          trending: true,
+          url: 'https://deepmind.google/research/deepfake-detection-breakthrough',
+          source: 'Google DeepMind',
+          verified: true
+        }
+      ]
+    };
+
+    return fallbackArticles[category] || fallbackArticles.health.slice(0, 3);
+  }
+}
+
+// Create NewsAPI service instance
+const newsService = new NewsAPIService();
+
+// Application Data (now using NewsAPI service)
+const appData = {
+  trendingTopics: [
+    "AI-powered fact checking",
+    "WhatsApp forward verification",
+    "Election misinformation",
+    "Health scam alerts",
+    "Deepfake detection",
+    "Financial fraud prevention",
+    "Social media literacy"
+  ],
+  statistics: {
+    totalVerifications: "2.3M+",
+    scamsDetected: "156K+",
+    usersEducated: "890K+",
+    accuracyRate: "99.8%"
+  },
+  trustedSources: TRUSTED_NEWS_SOURCES,
+  languages: {
+    en: {
+      title: "MisinfoGuard",
+      tagline: "Professional misinformation detection and digital literacy",
+      heroTitle: "Verify content. Build trust. Stay informed.",
+      heroSubtitle: "Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels.",
+      verifyContent: "Verify Content",
+      learnMore: "Explore Learning Center"
+    },
+    hi: {
+      title: "मिसइन्फोगार्ड",
+      tagline: "पेशेवर गलत सूचना का पता लगाना और डिजिटल साक्षरता",
+      heroTitle: "सामग्री सत्यापित करें। विश्वास बनाएं। जानकार रहें।",
+      heroSubtitle: "डिजिटल चैनलों में गलत सूचना, घोटाले और झूठी जानकारी का पता लगाने के लिए उन्नत AI-संचालित प्लेटफॉर्म।",
+      verifyContent: "सामग्री सत्यापित करें",
+      learnMore: "शिक्षण केंद्र देखें"
+    }
+  }
+};
+
+// Application State
+class ApplicationState {
+  constructor() {
+    this.currentSection = 'home';
+    this.currentLanguage = 'en';
+    this.currentCategory = 'all';
+    this.allArticles = [];
+    this.filteredArticles = [];
+    this.loadingNews = false;
+    this.newsLoaded = false;
+    this.currentPage = 1;
+    this.articlesPerPage = 9;
+    this.currentView = 'grid';
+    this.currentSort = 'date-desc';
+    this.currentSource = 'all';
+    this.searchQuery = '';
+    this.init();
+  }
+
+  async init() {
+    await this.loadAllArticles();
+  }
+
+  async loadAllArticles() {
+    if (this.loadingNews || this.newsLoaded) return;
+    
+    this.loadingNews = true;
+    
+    try {
+      const categories = ['health', 'politics', 'financial', 'technology', 'education', 'ai_deepfakes'];
+      const allArticlesPromises = categories.map(category => 
+        newsService.fetchNews(category)
+      );
+      
+      const categorizedArticles = await Promise.all(allArticlesPromises);
+      
+      // Flatten all articles
+      this.allArticles = [];
+      categorizedArticles.forEach(articles => {
+        this.allArticles.push(...articles);
+      });
+      
+      // Sort by date (newest first)
+      this.allArticles.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Initially show all articles
+      this.filteredArticles = [...this.allArticles];
+      
+      this.newsLoaded = true;
+      
+      // Re-render if news section is currently visible
+      if (this.currentSection === 'news') {
+        renderNewsSection();
+      }
+    } catch (error) {
+      console.error('Error loading articles:', error);
+      // Fallback to a few sample articles
+      this.allArticles = await newsService.fetchNews('health');
+      this.filteredArticles = [...this.allArticles];
+    } finally {
+      this.loadingNews = false;
+    }
+  }
+
+  filterArticles(category, searchTerm = '') {
+    let filtered = [...this.allArticles];
+    
+    // Filter by category
+    if (category && category !== 'all') {
+      filtered = filtered.filter(article => 
+        article.category.toLowerCase().replace(/\s+/g, '_').replace('&', '') === category.toLowerCase()
+      );
+    }
+    
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(article =>
+        article.headline.toLowerCase().includes(term) ||
+        article.excerpt.toLowerCase().includes(term) ||
+        article.category.toLowerCase().includes(term) ||
+        article.author.toLowerCase().includes(term)
+      );
+    }
+    
+    // Filter by source
+    if (this.currentSource !== 'all') {
+      filtered = filtered.filter(article => 
+        article.source && article.source.toLowerCase().includes(this.currentSource.toLowerCase())
+      );
+    }
+    
+    // Sort articles
+    filtered = this.sortArticles(filtered, this.currentSort);
+    
+    this.filteredArticles = filtered;
+    this.currentPage = 1; // Reset to first page when filtering
+    return filtered;
+  }
+
+  sortArticles(articles, sortBy) {
+    const sorted = [...articles];
+    
+    switch (sortBy) {
+      case 'date-desc':
+        return sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+      case 'date-asc':
+        return sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
+      case 'trending':
+        return sorted.sort((a, b) => (b.trending ? 1 : 0) - (a.trending ? 1 : 0));
+      case 'relevance':
+        // For demo purposes, just shuffle for "relevance"
+        return sorted.sort(() => Math.random() - 0.5);
+      default:
+        return sorted;
+    }
+  }
+
+  getPaginatedArticles() {
+    const startIndex = (this.currentPage - 1) * this.articlesPerPage;
+    const endIndex = startIndex + this.articlesPerPage;
+    return this.filteredArticles.slice(startIndex, endIndex);
+  }
+
+  getTotalPages() {
+    return Math.ceil(this.filteredArticles.length / this.articlesPerPage);
+  }
+
+  getFeaturedArticles() {
+    return this.allArticles.filter(article => article.trending).slice(0, 3);
+  }
+
+  getRecentArticles() {
+    return this.allArticles.slice(0, 5);
+  }
+}
+
+const appState = new ApplicationState();
+
+// Enhanced Navigation functionality with animations
+function initNavigation() {
+  const navLinks = document.querySelectorAll('.nav__link');
+  const sections = document.querySelectorAll('.section');
+  const heroSection = document.querySelector('.hero-section');
+  const statsSection = document.querySelector('#home-stats');
+  const header = document.querySelector('.header');
+  
+  // Header scroll effect
+  let lastScrollY = window.scrollY;
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 100) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+    lastScrollY = window.scrollY;
+  });
+  
+  navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetSection = link.getAttribute('href').substring(1);
+      
+      // Add smooth transition
+      document.body.style.transition = 'opacity 0.3s ease';
+      
+      // Hide all sections with fade out
+      sections.forEach(section => {
+        section.style.opacity = '0';
+        setTimeout(() => section.classList.add('hidden'), 150);
+      });
+      
+      if (heroSection) {
+        heroSection.style.opacity = '0';
+        setTimeout(() => heroSection.classList.add('hidden'), 150);
+      }
+      if (statsSection) {
+        statsSection.style.opacity = '0';
+        setTimeout(() => statsSection.classList.add('hidden'), 150);
+      }
+      
+      // Show target section with fade in
+      setTimeout(() => {
+        if (targetSection === 'home') {
+          if (heroSection) {
+            heroSection.classList.remove('hidden');
+            heroSection.style.opacity = '1';
+          }
+          if (statsSection) {
+            statsSection.classList.remove('hidden');
+            statsSection.style.opacity = '1';
+          }
+        } else {
+          const targetEl = document.getElementById(targetSection);
+          if (targetEl) {
+            targetEl.classList.remove('hidden');
+            targetEl.style.opacity = '1';
+          }
+        }
+      }, 200);
+      
+      // Update active nav link
+      navLinks.forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      
+      appState.currentSection = targetSection;
+      
+      // Load news if navigating to news section
+      if (targetSection === 'news') {
+        setTimeout(() => {
+          if (!appState.newsLoaded) {
+            showNewsLoadingState();
+          }
+          renderNewsSection();
+        }, 250);
+      }
+    });
+  });
+
+  // Enhanced button interactions
+  const verifyContentBtn = document.getElementById('verifyContentBtn');
+  const learnMoreBtn = document.getElementById('learnMoreBtn');
+  const getStartedBtn = document.getElementById('getStartedBtn');
+
+  if (verifyContentBtn) {
+    verifyContentBtn.addEventListener('click', () => {
+      navigateToSection('verify');
+    });
+  }
+
+  if (learnMoreBtn) {
+    learnMoreBtn.addEventListener('click', () => {
+      navigateToSection('news');
+    });
+  }
+
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener('click', () => {
+      navigateToSection('verify');
+    });
+  }
+}
+
+// Theme Toggle Functionality
+function initThemeToggle() {
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.querySelector('.theme-icon');
+  
+  // Get saved theme or default to light
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-color-scheme', savedTheme);
+  updateThemeIcon(savedTheme);
+  
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-color-scheme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      
+      // Add transition effect
+      document.documentElement.style.transition = 'all 0.3s ease';
+      
+      // Update theme
+      document.documentElement.setAttribute('data-color-scheme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      // Update icon
+      updateThemeIcon(newTheme);
+      
+      // Remove transition after animation
+      setTimeout(() => {
+        document.documentElement.style.transition = '';
+      }, 300);
+    });
+  }
+}
+
+function updateThemeIcon(theme) {
+  const themeIcon = document.querySelector('.theme-icon');
+  if (themeIcon) {
+    themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+  }
+}
+
+// Loading state for news
+function showNewsLoadingState() {
+  const articlesGrid = document.getElementById('articlesGrid');
+  const featuredArticles = document.getElementById('featuredArticles');
+  
+  if (articlesGrid) {
+    articlesGrid.innerHTML = `
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading latest fact-checked news...</p>
+      </div>
+    `;
+  }
+  
+  if (featuredArticles) {
+    featuredArticles.innerHTML = `
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Fetching featured articles...</p>
+      </div>
+    `;
+  }
+}
+
+function navigateToSection(sectionId) {
+  const sections = document.querySelectorAll('.section');
+  const heroSection = document.querySelector('.hero-section');
+  const statsSection = document.querySelector('#home-stats');
+  const navLinks = document.querySelectorAll('.nav__link');
+  
+  // Hide all sections
+  sections.forEach(section => {
+    section.style.opacity = '0';
+    section.classList.add('hidden');
+  });
+  if (heroSection) {
+    heroSection.style.opacity = '0';
+    heroSection.classList.add('hidden');
+  }
+  if (statsSection) {
+    statsSection.style.opacity = '0';
+    statsSection.classList.add('hidden');
+  }
+  
+  // Show target section
+  if (sectionId === 'home') {
+    if (heroSection) {
+      heroSection.classList.remove('hidden');
+      requestAnimationFrame(() => (heroSection.style.opacity = '1'));
+    }
+    if (statsSection) {
+      statsSection.classList.remove('hidden');
+      requestAnimationFrame(() => (statsSection.style.opacity = '1'));
+    }
+  } else {
+    const targetEl = document.getElementById(sectionId);
+    if (targetEl) {
+      targetEl.classList.remove('hidden');
+      requestAnimationFrame(() => (targetEl.style.opacity = '1'));
+    }
+  }
+  
+  // Update active nav link
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === `#${sectionId}`) {
+      link.classList.add('active');
+    }
+  });
+  
+  appState.currentSection = sectionId;
+
+  // Smooth scroll to top to avoid leftover whitespace positions
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Verification functionality
+function initVerification() {
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const textInput = document.getElementById('textInput');
+  const imageInput = document.getElementById('imageInput');
+  const fileUploadArea = document.getElementById('fileUploadArea');
+  const imagePreview = document.getElementById('imagePreview');
+  const verifyTextBtn = document.getElementById('verifyTextBtn');
+  const verifyImageBtn = document.getElementById('verifyImageBtn');
+
+  // Tab switching
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.dataset.tab;
+      
+      // Update tab buttons
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update tab contents
+      tabContents.forEach(content => content.classList.remove('active'));
+      const targetTab = document.getElementById(`${tabName}-tab`);
+      if (targetTab) targetTab.classList.add('active');
+    });
+  });
+
+  // File upload functionality
+  if (fileUploadArea && imageInput) {
+    fileUploadArea.addEventListener('click', () => {
+      imageInput.click();
+    });
+
+    fileUploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileUploadArea.style.borderColor = 'var(--color-primary)';
+    });
+
+    fileUploadArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      fileUploadArea.style.borderColor = '';
+    });
+
+    fileUploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileUploadArea.style.borderColor = '';
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleImageUpload(files[0]);
+      }
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleImageUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  // Analysis buttons
+  if (verifyTextBtn) {
+    verifyTextBtn.addEventListener('click', () => {
+      const text = textInput ? textInput.value.trim() : '';
+      if (text) {
+        analyzeContent(text, 'text');
+      } else {
+        alert('Please enter some text to analyze');
+      }
+    });
+  }
+
+  if (verifyImageBtn) {
+    verifyImageBtn.addEventListener('click', () => {
+      if (imagePreview && !imagePreview.classList.contains('hidden')) {
+        analyzeContent('uploaded image', 'image');
+      } else {
+        alert('Please upload an image to analyze');
+      }
+    });
+  }
+}
+
+function handleImageUpload(file) {
+  if (!file.type.startsWith('image/')) {
+    alert('Please upload an image file');
+    return;
+  }
+
+  const imagePreview = document.getElementById('imagePreview');
+  if (imagePreview) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+      imagePreview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function analyzeContent(content, type) {
+  const processingState = document.getElementById('processingState');
+  const resultsSection = document.getElementById('resultsSection');
+  const progressFill = document.getElementById('progressFill');
+  
+  // Hide previous results and show processing
+  if (resultsSection) resultsSection.classList.add('hidden');
+  if (processingState) processingState.classList.remove('hidden');
+  
+  // Simulate analysis with progress
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 15 + 5;
+    if (progress > 100) progress = 100;
+    
+    if (progressFill) {
+      progressFill.style.width = `${progress}%`;
+    }
+    
+    if (progress >= 100) {
+      clearInterval(progressInterval);
+      setTimeout(() => {
+        showAnalysisResults(content, type);
+      }, 800);
+    }
+  }, 200);
+}
+
+function showAnalysisResults(content, type) {
+  const processingState = document.getElementById('processingState');
+  const resultsSection = document.getElementById('resultsSection');
+  
+  // Hide processing and show results
+  if (processingState) processingState.classList.add('hidden');
+  
+  // Generate and display results
+  const result = generateMockResult(content);
+  displayVerificationResults(result);
+  
+  if (resultsSection) resultsSection.classList.remove('hidden');
+}
+
+function generateMockResult(content) {
+  const contentLower = content.toLowerCase();
+  
+  // Check for scam indicators
+  const scamKeywords = ['click here', 'urgent', 'winner', 'lottery', 'free money', 'limited time', 'government scheme', 'claim now'];
+  const hasScamKeywords = scamKeywords.some(keyword => contentLower.includes(keyword));
+  
+  // Check for health claims
+  const healthKeywords = ['cure', 'medicine', 'treatment', 'covid', 'vaccine', 'miracle'];
+  const hasHealthClaims = healthKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasScamKeywords) {
+    return {
+      verdict: 'dangerous',
+      confidence: 92,
+      explanation: 'This content contains multiple scam indicators including urgency tactics and suspicious claims. High probability of being fraudulent.',
+      recommendations: [
+        'Do not click any links or provide personal information',
+        'Verify through official channels before taking action',
+        'Report this content to relevant authorities',
+        'Educate others about these common scam tactics'
+      ]
+    };
+  } else if (hasHealthClaims) {
+    return {
+      verdict: 'suspicious',
+      confidence: 68,
+      explanation: 'Medical claims detected that require verification from qualified healthcare professionals and official health authorities.',
+      recommendations: [
+        'Consult with qualified medical professionals',
+        'Check WHO and official health ministry websites',
+        'Look for peer-reviewed scientific studies',
+        'Be cautious of miracle cure claims'
+      ]
+    };
+  } else {
+    return {
+      verdict: 'safe',
+      confidence: 85,
+      explanation: 'Content appears to be legitimate but always practice critical thinking when consuming digital information.',
+      recommendations: [
+        'Cross-reference with multiple reliable sources',
+        'Check publication dates and author credentials',
+        'Verify important information before sharing',
+        'Stay updated with digital literacy best practices'
+      ]
+    };
+  }
+}
+
+function displayVerificationResults(result) {
+  const confidenceFill = document.getElementById('confidenceFill');
+  const confidenceValue = document.getElementById('confidenceValue');
+  const verdictDisplay = document.getElementById('verdictDisplay');
+  const verdictIcon = document.getElementById('verdictIcon');
+  const verdictText = document.getElementById('verdictText');
+  const analysisExplanation = document.getElementById('analysisExplanation');
+  const recommendationsList = document.getElementById('recommendationsList');
+
+  // Update confidence meter
+  if (confidenceFill && confidenceValue) {
+    confidenceFill.style.width = `${result.confidence}%`;
+    confidenceValue.textContent = `${result.confidence}%`;
+    
+    // Set confidence level class
+    confidenceFill.className = 'confidence-fill';
+    if (result.confidence >= 75) {
+      confidenceFill.classList.add('high');
+    } else if (result.confidence >= 50) {
+      confidenceFill.classList.add('medium');
+    } else {
+      confidenceFill.classList.add('low');
+    }
+  }
+  
+  // Update verdict display
+  if (verdictDisplay) {
+    verdictDisplay.className = `verdict-display ${result.verdict}`;
+    
+    if (verdictIcon && verdictText) {
+      switch (result.verdict) {
+        case 'safe':
+          verdictIcon.textContent = '✅';
+          verdictText.textContent = 'Likely Safe';
+          break;
+        case 'suspicious':
+          verdictIcon.textContent = '⚠️';
+          verdictText.textContent = 'Needs Verification';
+          break;
+        case 'dangerous':
+          verdictIcon.textContent = '❌';
+          verdictText.textContent = 'Likely Dangerous';
+          break;
+      }
+    }
+  }
+  
+  // Update explanation
+  if (analysisExplanation) {
+    analysisExplanation.textContent = result.explanation;
+  }
+  
+  // Update recommendations
+  if (recommendationsList) {
+    recommendationsList.innerHTML = '';
+    result.recommendations.forEach(rec => {
+      const li = document.createElement('li');
+      li.textContent = rec;
+      recommendationsList.appendChild(li);
+    });
+  }
+}
+
+// Enhanced News functionality
+function initNewsSection() {
+  const categoryTabs = document.querySelectorAll('.category-tab');
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const sortFilter = document.getElementById('sortFilter');
+  const sourceFilter = document.getElementById('sourceFilter');
+  const viewBtns = document.querySelectorAll('.view-btn');
+
+  // Category tabs
+  categoryTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const category = tab.dataset.category;
+      
+      // Update active tab with animation
+      categoryTabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      // Update state and filter articles
+      appState.currentCategory = category;
+      appState.filterArticles(category, appState.searchQuery);
+      
+      // Re-render with loading animation
+      animateArticleTransition(() => {
+        renderArticles();
+        renderPagination();
+        updateResultsCount();
+      });
+    });
+  });
+
+  // Enhanced search functionality
+  const performSearch = () => {
+    const searchTerm = searchInput ? searchInput.value : '';
+    appState.searchQuery = searchTerm;
+    appState.filterArticles(appState.currentCategory, searchTerm);
+    
+    animateArticleTransition(() => {
+      renderArticles();
+      renderPagination();
+      updateResultsCount();
+    });
+  };
+
+  if (searchInput) {
+    // Debounced search
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(performSearch, 300);
+    });
+    
+    // Enter key search
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        clearTimeout(searchTimeout);
+        performSearch();
+      }
+    });
+  }
+
+  if (searchBtn) {
+    searchBtn.addEventListener('click', performSearch);
+  }
+
+  // Sort filter
+  if (sortFilter) {
+    sortFilter.addEventListener('change', (e) => {
+      appState.currentSort = e.target.value;
+      appState.filterArticles(appState.currentCategory, appState.searchQuery);
+      
+      animateArticleTransition(() => {
+        renderArticles();
+        renderPagination();
+        updateResultsCount();
+      });
+    });
+  }
+
+  // Source filter
+  if (sourceFilter) {
+    sourceFilter.addEventListener('change', (e) => {
+      appState.currentSource = e.target.value;
+      appState.filterArticles(appState.currentCategory, appState.searchQuery);
+      
+      animateArticleTransition(() => {
+        renderArticles();
+        renderPagination();
+        updateResultsCount();
+      });
+    });
+  }
+
+  // View toggle
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      
+      // Update active button
+      viewBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update view
+      appState.currentView = view;
+      const articlesGrid = document.getElementById('articlesGrid');
+      if (articlesGrid) {
+        articlesGrid.className = view === 'list' ? 'articles-grid list-view' : 'articles-grid';
+      }
+    });
+  });
+
+  // Initial render
+  renderNewsSection();
+}
+
+function renderNewsSection() {
+  renderFeaturedArticles();
+  renderArticles();
+  renderTrendingTopics();
+  renderRecentArticles();
+}
+
+function renderFeaturedArticles() {
+  const featuredArticles = document.getElementById('featuredArticles');
+  if (!featuredArticles) return;
+  
+  const featured = appState.getFeaturedArticles();
+  featuredArticles.innerHTML = '';
+  
+  featured.forEach(article => {
+    const articleElement = createArticleCard(article, true);
+    featuredArticles.appendChild(articleElement);
+  });
+}
+
+// Enhanced renderNewsSection with loading states and error handling
+async function renderNewsSection() {
+  // Show loading state if articles aren't loaded yet
+  if (!appState.newsLoaded && !appState.loadingNews) {
+    showNewsLoadingState();
+    await appState.loadAllArticles();
+  }
+  
+  renderFeaturedArticles();
+  renderArticles();
+  renderTrendingTopics();
+  renderRecentArticles();
+  renderTrustedSources();
+  renderPagination();
+  updateResultsCount();
+}
+
+function renderArticles() {
+  const articlesGrid = document.getElementById('articlesGrid');
+  if (!articlesGrid) return;
+  
+  // Get paginated articles
+  const paginatedArticles = appState.getPaginatedArticles();
+  
+  articlesGrid.innerHTML = '';
+  
+  if (paginatedArticles.length === 0) {
+    articlesGrid.innerHTML = `
+      <div class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <h3>No articles found</h3>
+        <p>Try adjusting your search criteria or filters</p>
+        <button class="btn btn--outline" onclick="clearFilters()">Clear Filters</button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Apply current view class
+  articlesGrid.className = appState.currentView === 'list' ? 'articles-grid list-view' : 'articles-grid';
+  
+  paginatedArticles.forEach((article, index) => {
+    const articleElement = createArticleCard(article, false);
+    
+    // Add staggered animation
+    articleElement.style.opacity = '0';
+    articleElement.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+      articleElement.style.transition = 'all 0.3s ease';
+      articleElement.style.opacity = '1';
+      articleElement.style.transform = 'translateY(0)';
+    }, index * 50);
+    
+    articlesGrid.appendChild(articleElement);
+  });
+}
+
+// Clear all filters
+function clearFilters() {
+  const searchInput = document.getElementById('searchInput');
+  const sortFilter = document.getElementById('sortFilter');
+  const sourceFilter = document.getElementById('sourceFilter');
+  const categoryTabs = document.querySelectorAll('.category-tab');
+  
+  if (searchInput) searchInput.value = '';
+  if (sortFilter) sortFilter.value = 'date-desc';
+  if (sourceFilter) sourceFilter.value = 'all';
+  
+  // Reset category to 'all'
+  categoryTabs.forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.dataset.category === 'all') {
+      tab.classList.add('active');
+    }
+  });
+  
+  // Reset app state
+  appState.currentCategory = 'all';
+  appState.currentSort = 'date-desc';
+  appState.currentSource = 'all';
+  appState.searchQuery = '';
+  appState.currentPage = 1;
+  
+  // Re-filter and render
+  appState.filterArticles('all', '');
+  
+  animateArticleTransition(() => {
+    renderArticles();
+    renderPagination();
+    updateResultsCount();
+  });
+}
+
+function createArticleCard(article, isFeatured = false) {
+  const card = document.createElement('div');
+  const cardClasses = ['article-card'];
+  
+  if (isFeatured) cardClasses.push('featured');
+  if (article.verified) cardClasses.push('verified');
+  
+  card.className = cardClasses.join(' ');
+  
+  const trendingBadge = article.trending ? '<span class="trending-badge">Trending</span>' : '';
+  const verifiedBadge = article.verified ? '<span class="verified-badge" title="Verified by trusted source">Verified</span>' : '';
+  const sourceInfo = article.source ? `<span class="article-source">${article.source}</span>` : '';
+  
+  card.innerHTML = `
+    <div class="article-header">
+      <div class="article-category">${article.category}${trendingBadge}</div>
+      ${verifiedBadge}
+    </div>
+    <a href="${article.url || '#'}" class="article-headline" target="${article.url ? '_blank' : '_self'}" onclick="${article.url ? '' : `openArticle(${article.id}); return false;`}">
+      ${article.headline}
+      ${article.url ? '<span class="external-link-icon">↗</span>' : ''}
+    </a>
+    <div class="article-meta">
+      <span class="article-author">${article.author}</span>
+      <span class="article-date">${formatDate(article.date)}</span>
+      ${sourceInfo}
+    </div>
+    <div class="article-excerpt">${article.excerpt}</div>
+    <div class="article-footer">
+      <span class="read-time">${article.readTime}</span>
+      <a href="${article.url || '#'}" class="read-more" target="${article.url ? '_blank' : '_self'}" onclick="${article.url ? '' : `openArticle(${article.id}); return false;`}">
+        ${article.url ? 'Read Full Article' : 'Read More'}
+        <span class="read-more-icon">→</span>
+      </a>
+    </div>
+  `;
+  
+  // Add click tracking for analytics
+  card.addEventListener('click', () => {
+    trackArticleClick(article.id, article.category);
+  });
+  
+  return card;
+}
+
+// Article click tracking
+function trackArticleClick(articleId, category) {
+  console.log(`Article clicked: ${articleId} in category: ${category}`);
+  // In production, this would send analytics data
+}
+
+// Animation helper for article transitions
+function animateArticleTransition(callback) {
+  const articlesGrid = document.getElementById('articlesGrid');
+  if (!articlesGrid) {
+    callback();
+    return;
+  }
+  
+  // Fade out
+  articlesGrid.style.opacity = '0';
+  articlesGrid.style.transform = 'translateY(20px)';
+  
+  setTimeout(() => {
+    callback();
+    
+    // Fade in
+    articlesGrid.style.opacity = '1';
+    articlesGrid.style.transform = 'translateY(0)';
+  }, 200);
+}
+
+// Update results count
+function updateResultsCount() {
+  const resultsCount = document.getElementById('resultsCount');
+  if (!resultsCount) return;
+  
+  const total = appState.filteredArticles.length;
+  const showing = Math.min(appState.articlesPerPage, total - (appState.currentPage - 1) * appState.articlesPerPage);
+  const start = total > 0 ? (appState.currentPage - 1) * appState.articlesPerPage + 1 : 0;
+  const end = Math.min(start + showing - 1, total);
+  
+  if (total === 0) {
+    resultsCount.textContent = 'No articles found';
+  } else {
+    resultsCount.textContent = `Showing ${start}-${end} of ${total} articles`;
+  }
+}
+
+// Render pagination
+function renderPagination() {
+  const pagination = document.getElementById('pagination');
+  if (!pagination) return;
+  
+  const totalPages = appState.getTotalPages();
+  const currentPage = appState.currentPage;
+  
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+  
+  let paginationHTML = '';
+  
+  // Previous button
+  paginationHTML += `
+    <button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+      ← Previous
+    </button>
+  `;
+  
+  // Page numbers
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  if (startPage > 1) {
+    paginationHTML += `<button class="pagination-btn" onclick="changePage(1)">1</button>`;
+    if (startPage > 2) {
+      paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+    }
+  }
+  
+  for (let i = startPage; i <= endPage; i++) {
+    paginationHTML += `
+      <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">
+        ${i}
+      </button>
+    `;
+  }
+  
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      paginationHTML += `<span class="pagination-ellipsis">...</span>`;
+    }
+    paginationHTML += `<button class="pagination-btn" onclick="changePage(${totalPages})">${totalPages}</button>`;
+  }
+  
+  // Next button
+  paginationHTML += `
+    <button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+      Next →
+    </button>
+  `;
+  
+  // Page info
+  paginationHTML += `<div class="pagination-info">Page ${currentPage} of ${totalPages}</div>`;
+  
+  pagination.innerHTML = paginationHTML;
+}
+
+// Change page function
+function changePage(page) {
+  const totalPages = appState.getTotalPages();
+  if (page < 1 || page > totalPages) return;
+  
+  appState.currentPage = page;
+  
+  animateArticleTransition(() => {
+    renderArticles();
+    renderPagination();
+    updateResultsCount();
+  });
+  
+  // Scroll to top of articles
+  const articlesGrid = document.getElementById('articlesGrid');
+  if (articlesGrid) {
+    articlesGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// New function to render trusted sources
+function renderTrustedSources() {
+  const trustedSourcesContainer = document.getElementById('trustedSources');
+  if (!trustedSourcesContainer) return;
+  
+  const factCheckSources = appData.trustedSources.factCheck;
+  
+  trustedSourcesContainer.innerHTML = '';
+  
+  factCheckSources.forEach(source => {
+    const sourceElement = document.createElement('div');
+    sourceElement.className = 'trusted-source-card';
+    sourceElement.innerHTML = `
+      <div class="source-header">
+        <h4>${source.name}</h4>
+        <span class="verified-badge">Verified</span>
+      </div>
+      <p>${source.description}</p>
+      <a href="${source.url}" target="_blank" class="btn btn--sm btn--outline">
+        Visit Source
+        <span class="btn-icon">↗</span>
+      </a>
+    `;
+    trustedSourcesContainer.appendChild(sourceElement);
+  });
+}
+
+function renderTrendingTopics() {
+  const trendingTopics = document.getElementById('trendingTopics');
+  if (!trendingTopics) return;
+  
+  trendingTopics.innerHTML = '';
+  
+  appData.trendingTopics.forEach(topic => {
+    const topicElement = document.createElement('div');
+    topicElement.className = 'trending-topic';
+    topicElement.textContent = topic;
+    topicElement.addEventListener('click', () => {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.value = topic;
+        appState.filterArticles(appState.currentCategory, topic);
+        renderArticles();
+      }
+    });
+    trendingTopics.appendChild(topicElement);
+  });
+}
+
+function renderRecentArticles() {
+  const recentArticles = document.getElementById('recentArticles');
+  if (!recentArticles) return;
+  
+  const recent = appState.getRecentArticles();
+  recentArticles.innerHTML = '';
+  
+  recent.forEach(article => {
+    const recentElement = document.createElement('div');
+    recentElement.className = 'recent-article';
+    recentElement.innerHTML = `
+      <a href="#" class="recent-article-title" onclick="openArticle(${article.id})">${article.headline}</a>
+      <div class="recent-article-date">${formatDate(article.date)}</div>
+    `;
+    recentArticles.appendChild(recentElement);
+  });
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+}
+
+// Global function for article links
+function openArticle(articleId) {
+  const article = appState.allArticles.find(a => a.id === articleId);
+  if (article) {
+    alert(`Opening article: "${article.headline}"\n\nThis would open the full article in a real implementation.`);
+  }
+}
+
+// Language functionality
+function initLanguage() {
+  const languageToggle = document.getElementById('languageToggle');
+  if (!languageToggle) return;
+  
+  languageToggle.addEventListener('click', () => {
+    appState.currentLanguage = appState.currentLanguage === 'en' ? 'hi' : 'en';
+    updateLanguage();
+  });
+}
+
+function updateLanguage() {
+  const currentLang = appData.languages[appState.currentLanguage];
+  if (!currentLang) return;
+  
+  const languageToggle = document.getElementById('languageToggle');
+  
+  // Update language toggle button
+  if (languageToggle) {
+    languageToggle.textContent = appState.currentLanguage === 'en' ? 'EN / हिं' : 'हिं / EN';
+  }
+  
+  // Update translatable elements (basic implementation)
+  document.querySelectorAll('[data-translate]').forEach(element => {
+    const key = element.getAttribute('data-translate');
+    if (currentLang[key]) {
+      element.textContent = currentLang[key];
+    }
+  });
+}
+
+// Accessibility and Keyboard Navigation
+class AccessibilityManager {
+  constructor() {
+    this.focusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    this.currentFocusIndex = 0;
+    this.announcements = document.createElement('div');
+    this.setupAriaLiveRegion();
+    this.initKeyboardNavigation();
+    this.initFocusManagement();
+  }
+  
+  setupAriaLiveRegion() {
+    this.announcements.setAttribute('aria-live', 'polite');
+    this.announcements.setAttribute('aria-atomic', 'true');
+    this.announcements.className = 'sr-only';
+    this.announcements.id = 'announcements';
+    document.body.appendChild(this.announcements);
+  }
+  
+  announce(message) {
+    this.announcements.textContent = message;
+    setTimeout(() => {
+      this.announcements.textContent = '';
+    }, 1000);
+  }
+  
+  initKeyboardNavigation() {
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'Tab':
+          this.handleTabNavigation(e);
+          break;
+        case 'Escape':
+          this.handleEscapeKey(e);
+          break;
+        case 'Enter':
+        case ' ':
+          this.handleEnterSpace(e);
+          break;
+        case 'ArrowUp':
+        case 'ArrowDown':
+          this.handleArrowKeys(e);
+          break;
+        case '/':
+          this.handleSearchShortcut(e);
+          break;
+      }
+    });
+  }
+  
+  handleTabNavigation(e) {
+    const focusableElements = document.querySelectorAll(this.focusableElements);
+    const visibleElements = Array.from(focusableElements).filter(el => {
+      return el.offsetParent !== null && !el.disabled && 
+             !el.closest('.hidden') && !el.closest('[aria-hidden="true"]');
+    });
+    
+    if (visibleElements.length === 0) return;
+    
+    const currentIndex = visibleElements.indexOf(document.activeElement);
+    
+    if (e.shiftKey) {
+      // Shift + Tab (backward)
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : visibleElements.length - 1;
+      visibleElements[prevIndex].focus();
+      e.preventDefault();
+    } else {
+      // Tab (forward)
+      const nextIndex = currentIndex < visibleElements.length - 1 ? currentIndex + 1 : 0;
+      visibleElements[nextIndex].focus();
+      e.preventDefault();
+    }
+  }
+  
+  handleEscapeKey(e) {
+    // Close any open modals or return to main navigation
+    const activeModal = document.querySelector('.modal[aria-hidden="false"]');
+    if (activeModal) {
+      this.closeModal(activeModal);
+      return;
+    }
+    
+    // Clear search if focused
+    const searchInput = document.getElementById('searchInput');
+    if (document.activeElement === searchInput && searchInput.value) {
+      searchInput.value = '';
+      searchInput.dispatchEvent(new Event('input'));
+      this.announce('Search cleared');
+      return;
+    }
+    
+    // Return focus to main navigation
+    const firstNavLink = document.querySelector('.nav__link');
+    if (firstNavLink) {
+      firstNavLink.focus();
+      this.announce('Focus returned to main navigation');
+    }
+  }
+  
+  handleEnterSpace(e) {
+    const target = e.target;
+    
+    // Handle custom button-like elements
+    if (target.getAttribute('role') === 'button' && !target.disabled) {
+      target.click();
+      e.preventDefault();
+    }
+    
+    // Handle category tabs
+    if (target.classList.contains('category-tab')) {
+      target.click();
+      e.preventDefault();
+    }
+  }
+  
+  handleArrowKeys(e) {
+    const target = e.target;
+    
+    // Navigate through category tabs
+    if (target.classList.contains('category-tab')) {
+      const tabs = Array.from(document.querySelectorAll('.category-tab'));
+      const currentIndex = tabs.indexOf(target);
+      
+      let nextIndex;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+      } else {
+        nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+      }
+      
+      tabs[nextIndex].focus();
+      e.preventDefault();
+    }
+    
+    // Navigate through pagination
+    if (target.classList.contains('pagination-btn')) {
+      const buttons = Array.from(document.querySelectorAll('.pagination-btn:not([disabled])'));
+      const currentIndex = buttons.indexOf(target);
+      
+      let nextIndex;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : buttons.length - 1;
+      } else {
+        nextIndex = currentIndex < buttons.length - 1 ? currentIndex + 1 : 0;
+      }
+      
+      buttons[nextIndex].focus();
+      e.preventDefault();
+    }
+  }
+  
+  handleSearchShortcut(e) {
+    // Focus search input when '/' is pressed (like GitHub)
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.focus();
+        e.preventDefault();
+        this.announce('Search focused');
+      }
+    }
+  }
+  
+  initFocusManagement() {
+    // Add focus indicators
+    document.addEventListener('focusin', (e) => {
+      e.target.classList.add('keyboard-focus');
+    });
+    
+    document.addEventListener('focusout', (e) => {
+      e.target.classList.remove('keyboard-focus');
+    });
+    
+    // Announce section changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const target = mutation.target;
+          if (target.classList.contains('section') && !target.classList.contains('hidden')) {
+            const sectionTitle = target.querySelector('h2')?.textContent || 
+                                target.id?.replace('-', ' ') || 'Section';
+            this.announce(`Navigated to ${sectionTitle}`);
+          }
+        }
+      });
+    });
+    
+    document.querySelectorAll('.section').forEach(section => {
+      observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+  
+  // Skip to main content functionality
+  addSkipLink() {
+    const skipLink = document.createElement('a');
+    skipLink.href = '#main-content';
+    skipLink.className = 'skip-link';
+    skipLink.textContent = 'Skip to main content';
+    document.body.insertBefore(skipLink, document.body.firstChild);
+    
+    skipLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const mainContent = document.getElementById('main-content') || 
+                         document.querySelector('main') ||
+                         document.querySelector('.hero-section');
+      if (mainContent) {
+        mainContent.focus();
+        mainContent.scrollIntoView();
+      }
+    });
+  }
+  
+  // Update ARIA labels based on state
+  updateAriaLabels() {
+    // Update navigation current page
+    const activeNavLink = document.querySelector('.nav__link.active');
+    document.querySelectorAll('.nav__link').forEach(link => {
+      link.removeAttribute('aria-current');
+    });
+    if (activeNavLink) {
+      activeNavLink.setAttribute('aria-current', 'page');
+    }
+    
+    // Update theme toggle label
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+      const currentTheme = document.documentElement.getAttribute('data-color-scheme') || 'light';
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      themeToggle.setAttribute('aria-label', `Switch to ${newTheme} theme`);
+    }
+  }
+}
+
+// Initialize application
+function initApp() {
+  console.log('Initializing MisinfoGuard application...');
+  // Ensure CSS knows the exact sticky header height
+  updateHeaderHeight();
+  window.addEventListener('resize', debounce(updateHeaderHeight, 150));
+  
+  // Initialize accessibility first
+  const accessibilityManager = new AccessibilityManager();
+  accessibilityManager.addSkipLink();
+  
+  // Initialize core functionality
+  initNavigation();
+  initThemeToggle();
+  initVerification();
+  initNewsSection();
+  initLanguage();
+  
+  // Initialize animations and interactions
+  initScrollAnimations();
+  initParallaxEffects();
+  initDataVisualizations();
+  
+  // Update accessibility labels
+  accessibilityManager.updateAriaLabels();
+  
+  // Preload critical news data
+  appState.loadAllArticles();
+  
+  // Global accessibility manager reference
+  window.accessibilityManager = accessibilityManager;
+  
+  console.log('MisinfoGuard application initialized successfully!');
+}
+
+// Enhanced scroll animations
+function initScrollAnimations() {
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-in');
+        
+        // Special handling for stat cards
+        if (entry.target.classList.contains('stat-card')) {
+          const icon = entry.target.querySelector('.stat-card__icon');
+          if (icon) {
+            icon.style.animationDelay = '0.2s';
+          }
+        }
+      }
+    });
+  }, observerOptions);
+  
+  // Observe stat cards for animation
+  document.querySelectorAll('.stat-card').forEach(card => {
+    observer.observe(card);
+  });
+  
+  // Observe article cards
+  document.querySelectorAll('.article-card').forEach(card => {
+    observer.observe(card);
+  });
+  
+  // Observe other animated elements
+  document.querySelectorAll('.hero__badge, .hero__title, .hero__subtitle, .hero__actions').forEach(element => {
+    observer.observe(element);
+  });
+}
+
+// Animated counter for statistics
+function initAnimatedCounters() {
+  const counters = document.querySelectorAll('.stat-card__number[data-target]');
+  
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCounter(entry.target);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  
+  counters.forEach(counter => observer.observe(counter));
+}
+
+function animateCounter(element) {
+  const target = parseInt(element.dataset.target);
+  const duration = 2000;
+  const increment = target / (duration / 16);
+  let current = 0;
+  
+  const timer = setInterval(() => {
+    current += increment;
+    if (current >= target) {
+      current = target;
+      clearInterval(timer);
+    }
+    
+    // Format number with appropriate suffix
+    const formatted = formatStatNumber(current, target);
+    element.textContent = formatted;
+  }, 16);
+}
+
+function formatStatNumber(current, target) {
+  if (target >= 1000000) {
+    return (current / 1000000).toFixed(1) + 'M';
+  } else if (target >= 1000) {
+    return (current / 1000).toFixed(0) + 'K';
+  } else if (target < 100) {
+    return current.toFixed(1);
+  } else {
+    return Math.round(current).toLocaleString();
+  }
+}
+
+// Live verification feed
+class LiveFeedManager {
+  constructor() {
+    this.feedContainer = document.getElementById('liveFeed');
+    this.feedItems = [
+      { status: 'verified', text: 'Health claim verified from WHO source', type: 'health' },
+      { status: 'flagged', text: 'Suspicious financial scheme detected', type: 'financial' },
+      { status: 'verified', text: 'Political fact-check confirmed by Reuters', type: 'politics' },
+      { status: 'pending', text: 'Deepfake analysis in progress', type: 'technology' },
+      { status: 'verified', text: 'Medical misinformation debunked by CDC', type: 'health' },
+      { status: 'flagged', text: 'Cryptocurrency scam alert issued', type: 'financial' },
+      { status: 'verified', text: 'Educational content approved by UNESCO', type: 'education' },
+      { status: 'flagged', text: 'AI-generated content identified', type: 'ai_deepfakes' }
+    ];
+    this.currentIndex = 0;
+    this.startFeed();
+  }
+  
+  startFeed() {
+    if (!this.feedContainer) return;
+    
+    // Add initial item
+    this.addFeedItem();
+    
+    // Add new items every 3-5 seconds
+    setInterval(() => {
+      this.addFeedItem();
+    }, Math.random() * 2000 + 3000);
+  }
+  
+  addFeedItem() {
+    const item = this.feedItems[this.currentIndex];
+    this.currentIndex = (this.currentIndex + 1) % this.feedItems.length;
+    
+    const feedElement = document.createElement('div');
+    feedElement.className = 'feed-item';
+    feedElement.innerHTML = `
+      <span class="feed-status ${item.status}">${this.getStatusIcon(item.status)}</span>
+      <span class="feed-text">${item.text}</span>
+      <span class="feed-time">now</span>
+    `;
+    
+    // Add to top of feed
+    this.feedContainer.insertBefore(feedElement, this.feedContainer.firstChild);
+    
+    // Remove old items (keep max 5)
+    const items = this.feedContainer.querySelectorAll('.feed-item');
+    if (items.length > 5) {
+      items[items.length - 1].remove();
+    }
+    
+    // Update timestamps
+    this.updateTimestamps();
+  }
+  
+  getStatusIcon(status) {
+    switch (status) {
+      case 'verified': return '✓';
+      case 'flagged': return '⚠';
+      case 'pending': return '🔄';
+      default: return '•';
+    }
+  }
+  
+  updateTimestamps() {
+    const timeElements = this.feedContainer.querySelectorAll('.feed-time');
+    timeElements.forEach((element, index) => {
+      if (index === 0) {
+        element.textContent = 'now';
+      } else {
+        element.textContent = `${index * 3}s ago`;
+      }
+    });
+  }
+}
+
+// Mini chart visualization
+function createMiniChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = container.offsetWidth;
+  canvas.height = 40;
+  container.appendChild(canvas);
+  
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 40);
+  gradient.addColorStop(0, 'rgba(33, 128, 141, 0.8)');
+  gradient.addColorStop(1, 'rgba(33, 128, 141, 0.1)');
+  
+  // Generate sample data if not provided
+  if (!data) {
+    data = Array.from({ length: 20 }, () => Math.random() * 0.8 + 0.2);
+  }
+  
+  const width = canvas.width;
+  const height = canvas.height;
+  const stepX = width / (data.length - 1);
+  
+  // Draw the chart
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  
+  data.forEach((value, index) => {
+    const x = index * stepX;
+    const y = height - (value * height);
+    if (index === 0) {
+      ctx.lineTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  
+  ctx.lineTo(width, height);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  
+  // Draw the line
+  ctx.beginPath();
+  data.forEach((value, index) => {
+    const x = index * stepX;
+    const y = height - (value * height);
+    if (index === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  });
+  ctx.strokeStyle = 'rgba(33, 128, 141, 1)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// Initialize all data visualizations
+function initDataVisualizations() {
+  // Initialize animated counters
+  initAnimatedCounters();
+  
+  // Initialize live feed
+  const liveFeed = new LiveFeedManager();
+  
+  // Create mini charts for each stat card
+  setTimeout(() => {
+    createMiniChart('verificationsChart');
+    createMiniChart('scamsChart');
+    createMiniChart('usersChart');
+    createMiniChart('accuracyChart');
+  }, 500);
+}
+
+// Parallax effects
+function initParallaxEffects() {
+  let ticking = false;
+  
+  function updateParallax() {
+    const scrolled = window.pageYOffset;
+    const parallaxElements = document.querySelectorAll('[data-parallax]');
+    
+    parallaxElements.forEach(element => {
+      const speed = element.dataset.parallax || 0.5;
+      const yPos = -(scrolled * speed);
+      element.style.transform = `translateY(${yPos}px)`;
+    });
+    
+    ticking = false;
+  }
+  
+  function requestTick() {
+    if (!ticking) {
+      requestAnimationFrame(updateParallax);
+      ticking = true;
+    }
+  }
+  
+  window.addEventListener('scroll', requestTick);
+}
+
+// VS Code Background Animation
+class VSCodeBackground {
+  constructor() {
+    this.codeLines = document.getElementById('codeLines');
+    this.heatmapGrid = document.getElementById('heatmapGrid');
+    this.codeSnippets = [
+      'function analyzeContent(text) {',
+      '  const result = await api.factCheck(text);',
+      '  return result.credibility > 0.8;',
+      '}',
+      '',
+      'class MisinformationDetector {',
+      '  constructor(apiKeys) {',
+      '    this.gemini = new GeminiAPI(apiKeys.gemini);',
+      '    this.ocr = new OCRService(apiKeys.ocr);',
+      '  }',
+      '',
+      '  async verify(content) {',
+      '    const analysis = await this.gemini.analyze(content);',
+      '    return {',
+      '      credible: analysis.score > 0.7,',
+      '      confidence: analysis.confidence,',
+      '      sources: analysis.sources',
+      '    };',
+      '  }',
+      '}',
+      '',
+      'const detector = new MisinformationDetector({',
+      '  gemini: process.env.GEMINI_API_KEY,',
+      '  ocr: process.env.OCR_SPACE_API_KEY',
+      '});',
+      '',
+      'export { detector, analyzeContent };'
+    ];
+    this.init();
+  }
+
+  init() {
+    this.createCodeLines();
+    this.createHeatmapGrid();
+    this.startAnimations();
+  }
+
+  createCodeLines() {
+    if (!this.codeLines) return;
+    
+    for (let i = 0; i < 15; i++) {
+      const line = document.createElement('div');
+      line.className = 'code-line';
+      line.textContent = this.codeSnippets[i % this.codeSnippets.length];
+      line.style.left = Math.random() * 100 + '%';
+      line.style.animationDelay = Math.random() * 8 + 's';
+      line.style.animationDuration = (8 + Math.random() * 4) + 's';
+      this.codeLines.appendChild(line);
+    }
+  }
+
+  createHeatmapGrid() {
+    if (!this.heatmapGrid) return;
+    
+    for (let i = 0; i < 300; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      cell.style.animationDelay = Math.random() * 4 + 's';
+      cell.style.animationDuration = (4 + Math.random() * 2) + 's';
+      this.heatmapGrid.appendChild(cell);
+    }
+  }
+
+  startAnimations() {
+    // Refresh code lines periodically
+    setInterval(() => {
+      this.refreshCodeLines();
+    }, 10000);
+  }
+
+  refreshCodeLines() {
+    if (!this.codeLines) return;
+    
+    const lines = this.codeLines.querySelectorAll('.code-line');
+    lines.forEach((line, index) => {
+      setTimeout(() => {
+        line.textContent = this.codeSnippets[Math.floor(Math.random() * this.codeSnippets.length)];
+        line.style.left = Math.random() * 100 + '%';
+      }, index * 100);
+    });
+  }
+}
+
+// Chatbot Functionality
+class FactCheckChatbot {
+  constructor() {
+    this.chatMessages = document.getElementById('chatMessages');
+    this.chatInput = document.getElementById('chatInput');
+    this.chatSendBtn = document.getElementById('chatSendBtn');
+    this.isTyping = false;
+    this.conversationHistory = [];
+    this.init();
+  }
+
+  init() {
+    if (!this.chatInput || !this.chatSendBtn) return;
+    
+    this.chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage();
+      }
+    });
+
+    this.chatInput.addEventListener('input', () => {
+      this.autoResize();
+    });
+
+    this.chatSendBtn.addEventListener('click', () => {
+      this.sendMessage();
+    });
+  }
+
+  autoResize() {
+    this.chatInput.style.height = 'auto';
+    this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 100) + 'px';
+  }
+
+  async sendMessage() {
+    const message = this.chatInput.value.trim();
+    if (!message || this.isTyping) return;
+
+    this.addMessage(message, 'user');
+    this.chatInput.value = '';
+    this.autoResize();
+    this.chatSendBtn.disabled = true;
+
+    await this.processUserMessage(message);
+    this.chatSendBtn.disabled = false;
+  }
+
+  addMessage(content, sender = 'bot') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}`;
+    
+    const bubbleDiv = document.createElement('div');
+    bubbleDiv.className = 'message-bubble';
+    bubbleDiv.textContent = content;
+    
+    messageDiv.appendChild(bubbleDiv);
+    this.chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+  }
+
+  showTypingIndicator() {
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'typing-indicator';
+    typingDiv.id = 'typingIndicator';
+    
+    typingDiv.innerHTML = `
+      <span>AI is analyzing...</span>
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    `;
+    
+    this.chatMessages.appendChild(typingDiv);
+    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    this.isTyping = true;
+  }
+
+  hideTypingIndicator() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    if (typingIndicator) {
+      typingIndicator.remove();
+    }
+    this.isTyping = false;
+  }
+
+  async processUserMessage(message) {
+    this.showTypingIndicator();
+    this.conversationHistory.push({ role: 'user', content: message });
+
+    try {
+      // Use backend service if available
+      if (typeof backendService !== 'undefined') {
+        const analysis = await backendService.analyzeContent(message, 'text');
+        const response = this.generateResponseFromAnalysis(analysis, message);
+        
+        setTimeout(() => {
+          this.hideTypingIndicator();
+          this.addMessage(response, 'bot');
+          this.conversationHistory.push({ role: 'bot', content: response });
+        }, 1500);
+      } else {
+        // Fallback to local analysis
+        const response = this.generateLocalResponse(message);
+        
+        setTimeout(() => {
+          this.hideTypingIndicator();
+          this.addMessage(response, 'bot');
+          this.conversationHistory.push({ role: 'bot', content: response });
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      setTimeout(() => {
+        this.hideTypingIndicator();
+        this.addMessage('I apologize, but I encountered an error while analyzing your request. Please try again or contact support if the issue persists.', 'bot');
+      }, 1000);
+    }
+  }
+
+  generateResponseFromAnalysis(analysis, originalMessage) {
+    if (!analysis.analysis || !analysis.analysis.factCheck) {
+      return this.generateLocalResponse(originalMessage);
+    }
+
+    const factCheck = analysis.analysis.factCheck;
+    let response = `Based on my analysis:\n\n`;
+    
+    response += `🎯 **Credibility Score**: ${factCheck.credibilityScore}/100\n`;
+    response += `📊 **Verdict**: ${factCheck.verdict.toUpperCase()}\n\n`;
+    
+    if (factCheck.explanation) {
+      response += `📝 **Analysis**: ${factCheck.explanation}\n\n`;
+    }
+    
+    if (factCheck.redFlags && factCheck.redFlags.length > 0) {
+      response += `⚠️ **Red Flags**:\n`;
+      factCheck.redFlags.forEach(flag => {
+        response += `• ${flag}\n`;
+      });
+      response += '\n';
+    }
+    
+    if (factCheck.recommendations && factCheck.recommendations.length > 0) {
+      response += `💡 **Recommendations**:\n`;
+      factCheck.recommendations.forEach(rec => {
+        response += `• ${rec}\n`;
+      });
+    }
+    
+    return response;
+  }
+
+  generateLocalResponse(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    // Health claims
+    if (lowerMessage.includes('health') || lowerMessage.includes('medical') || lowerMessage.includes('cure') || lowerMessage.includes('vaccine')) {
+      return `I notice you're asking about health-related information. Here's my analysis:
+
+⚠️ **Important**: Always consult healthcare professionals for medical advice.
+
+🔍 **Quick Check**: 
+• Verify with official health organizations (WHO, CDC, NHS)
+• Look for peer-reviewed scientific studies
+• Be cautious of miracle cure claims
+• Check if the source has medical credentials
+
+💡 **Recommendations**:
+• Cross-reference with multiple medical sources
+• Consult your healthcare provider
+• Be wary of sensational health claims
+• Check publication dates for medical information`;
+    }
+    
+    // Scam detection
+    if (lowerMessage.includes('scam') || lowerMessage.includes('fraud') || lowerMessage.includes('money') || lowerMessage.includes('winner')) {
+      return `I can help you identify potential scams! Here are key warning signs:
+
+🚨 **Common Scam Indicators**:
+• Urgency tactics ("Act now!", "Limited time!")
+• Requests for personal/financial information
+• Too-good-to-be-true offers
+• Poor grammar or spelling
+• Unsolicited contact
+
+🛡️ **Protection Tips**:
+• Never share personal information with unknown contacts
+• Verify independently through official channels
+• Be skeptical of unexpected winnings or offers
+• Report suspicious content to authorities
+
+Would you like me to analyze specific content for scam indicators?`;
+    }
+    
+    // News verification
+    if (lowerMessage.includes('news') || lowerMessage.includes('article') || lowerMessage.includes('headline')) {
+      return `I can help you verify news content! Here's how to check:
+
+📰 **News Verification Steps**:
+• Check the source's reputation and bias
+• Look for corroborating reports from other outlets
+• Verify publication date and author credentials
+• Check if quotes and statistics are properly sourced
+
+🔍 **Red Flags in News**:
+• Sensational or emotional headlines
+• Lack of author information
+• No credible sources cited
+• Extreme bias or one-sided reporting
+
+💡 **Reliable Sources**: Reuters, AP News, BBC, NPR, and established local newspapers typically maintain high journalistic standards.
+
+Share the article or headline you'd like me to analyze!`;
+    }
+    
+    // Social media posts
+    if (lowerMessage.includes('social media') || lowerMessage.includes('facebook') || lowerMessage.includes('twitter') || lowerMessage.includes('instagram')) {
+      return `Social media content requires extra scrutiny! Here's my guidance:
+
+📱 **Social Media Fact-Checking**:
+• Check if the account is verified
+• Look for original sources of shared content
+• Be wary of emotional or divisive posts
+• Check comments for additional context or corrections
+
+⚠️ **Common Issues**:
+• Misleading captions on real images
+• Old content presented as current
+• Satirical content taken seriously
+• Echo chambers amplifying false information
+
+🔍 **Verification Tools**:
+• Reverse image search for photos
+• Check platform's fact-checking labels
+• Look for community notes or corrections
+• Verify through independent fact-checkers
+
+What specific social media content would you like me to help verify?`;
+    }
+    
+    // General response
+    return `I'm here to help you fact-check and verify information! I can assist with:
+
+🔍 **Content Analysis**:
+• News articles and headlines
+• Social media posts and claims
+• Health and medical information
+• Potential scams and fraud detection
+
+💡 **How I Help**:
+• Identify credibility indicators
+• Spot common misinformation patterns
+• Provide verification strategies
+• Suggest reliable sources
+
+📝 **To get started**: Share the specific content, claim, or question you'd like me to analyze. The more context you provide, the better I can help!
+
+You can also try asking:
+• "Is this news article credible?"
+• "Check this health claim"
+• "Is this a scam?"
+• "Verify this social media post"`;
+  }
+}
+
+// Global functions for suggested questions
+function sendSuggestedQuestion(question) {
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput && window.factCheckChatbot) {
+    chatInput.value = question;
+    window.factCheckChatbot.sendMessage();
+  }
+}
+
+function sendChatMessage() {
+  if (window.factCheckChatbot) {
+    window.factCheckChatbot.sendMessage();
+  }
+}
+
+// Initialize VS Code background and chatbot
+function initVSCodeFeatures() {
+  // Initialize VS Code background
+  const vsCodeBg = new VSCodeBackground();
+  
+  // Initialize chatbot
+  window.factCheckChatbot = new FactCheckChatbot();
+  
+  // Set dark theme by default for VS Code look
+  document.documentElement.setAttribute('data-color-scheme', 'dark');
+  updateThemeIcon('dark');
+}
+
+// Enhanced verification with backend integration
+async function analyzeContentWithBackend(content, type) {
+  const processingState = document.getElementById('processingState');
+  const resultsSection = document.getElementById('resultsSection');
+  const progressFill = document.getElementById('progressFill');
+  
+  // Hide previous results and show processing
+  if (resultsSection) resultsSection.classList.add('hidden');
+  if (processingState) processingState.classList.remove('hidden');
+  
+  // Simulate analysis with progress
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 15 + 5;
+    if (progress > 100) progress = 100;
+    
+    if (progressFill) {
+      progressFill.style.width = `${progress}%`;
+    }
+    
+    if (progress >= 100) {
+      clearInterval(progressInterval);
+    }
+  }, 200);
+
+  try {
+    let result;
+    
+    // Use backend service if available
+    if (typeof backendService !== 'undefined') {
+      const analysis = await backendService.analyzeContent(content, type);
+      result = convertBackendResult(analysis);
+    } else {
+      // Fallback to original mock analysis
+      result = generateMockResult(content);
+    }
+    
+    // Ensure progress reaches 100%
+    setTimeout(() => {
+      clearInterval(progressInterval);
+      if (progressFill) progressFill.style.width = '100%';
+      
+      setTimeout(() => {
+        showAnalysisResults(content, type, result);
+      }, 500);
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Analysis error:', error);
+    clearInterval(progressInterval);
+    
+    setTimeout(() => {
+      const fallbackResult = generateMockResult(content);
+      showAnalysisResults(content, type, fallbackResult);
+    }, 1000);
+  }
+}
+
+function convertBackendResult(backendAnalysis) {
+  if (!backendAnalysis.analysis || !backendAnalysis.analysis.factCheck) {
+    return generateMockResult('');
+  }
+  
+  const factCheck = backendAnalysis.analysis.factCheck;
+  
+  return {
+    verdict: factCheck.verdict || 'questionable',
+    confidence: factCheck.credibilityScore || 50,
+    explanation: factCheck.explanation || 'Analysis completed using AI fact-checking.',
+    recommendations: factCheck.recommendations || [
+      'Verify with additional sources',
+      'Check original source credibility',
+      'Look for corroborating evidence'
+    ]
+  };
+}
+
+// Update the original analyzeContent function
+function analyzeContent(content, type) {
+  analyzeContentWithBackend(content, type);
+}
+
+// Start the application
+document.addEventListener('DOMContentLoaded', () => {
+  initApp();
+  initVSCodeFeatures();
+});
