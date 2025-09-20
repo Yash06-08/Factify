@@ -820,8 +820,10 @@ function initVerification() {
   const imageInput = document.getElementById('imageInput');
   const fileUploadArea = document.getElementById('fileUploadArea');
   const imagePreview = document.getElementById('imagePreview');
-  const verifyTextBtn = document.getElementById('verifyTextBtn');
-  const verifyImageBtn = document.getElementById('verifyImageBtn');
+  const verifyTextBtn = document.getElementById('analyzeText');
+  const verifyImageBtn = document.getElementById('analyzeImage');
+  const clearTextBtn = document.getElementById('clearText');
+  const clearImageBtn = document.getElementById('clearImage');
 
   // Tab switching
   tabBtns.forEach(btn => {
@@ -889,6 +891,42 @@ function initVerification() {
         analyzeContent('uploaded image', 'image');
       } else {
         alert('Please upload an image to analyze');
+      }
+    });
+  }
+
+  // Clear button functionality
+  if (clearTextBtn) {
+    clearTextBtn.addEventListener('click', () => {
+      if (textInput) {
+        textInput.value = '';
+        textInput.focus();
+      }
+      // Clear any existing results
+      const resultsSection = document.getElementById('resultsSection');
+      if (resultsSection) {
+        resultsSection.classList.add('hidden');
+      }
+    });
+  }
+
+  if (clearImageBtn) {
+    clearImageBtn.addEventListener('click', () => {
+      if (imageInput) {
+        imageInput.value = '';
+      }
+      if (imagePreview) {
+        imagePreview.classList.add('hidden');
+        imagePreview.innerHTML = '';
+      }
+      // Reset file upload area
+      if (fileUploadArea) {
+        fileUploadArea.classList.remove('file-uploaded');
+      }
+      // Clear any existing results
+      const resultsSection = document.getElementById('resultsSection');
+      if (resultsSection) {
+        resultsSection.classList.add('hidden');
       }
     });
   }
@@ -2339,38 +2377,34 @@ class FactCheckChatbot {
     const sentiment = analysis.analysis?.sentiment || {};
     const classification = analysis.analysis?.classification || {};
     
-    let response = `Based on my AI analysis:\n\n`;
+    let response = `**Analysis Results:**\n\n`;
     
+    // Credibility with verdict
     if (factCheck.credibilityScore) {
-      response += `🎯 **Credibility Score**: ${factCheck.credibilityScore}/100\n`;
+      const score = factCheck.credibilityScore;
+      const verdict = score > 70 ? '✅ Likely Reliable' : score > 40 ? '⚠️ Questionable' : '❌ Likely Unreliable';
+      response += `🎯 ${verdict} (${score}/100)\n`;
     }
     
+    // Sentiment (concise)
     if (sentiment.sentiment) {
-      const sentimentEmoji = sentiment.sentiment === 'POSITIVE' ? '😊' : sentiment.sentiment === 'NEGATIVE' ? '😟' : '😐';
-      response += `${sentimentEmoji} **Sentiment**: ${sentiment.sentiment} (${Math.round(sentiment.confidence * 100)}% confidence)\n`;
+      const emoji = sentiment.sentiment === 'POSITIVE' ? '😊' : sentiment.sentiment === 'NEGATIVE' ? '😟' : '😐';
+      response += `${emoji} ${sentiment.sentiment} tone\n`;
     }
     
+    // Classification (concise)
     if (classification.classification) {
-      const classEmoji = classification.classification === 'factual' ? '📊' : classification.classification === 'opinion' ? '💭' : '⚠️';
-      response += `${classEmoji} **Content Type**: ${classification.classification} (${Math.round(classification.confidence * 100)}% confidence)\n\n`;
+      const emoji = classification.classification === 'factual' ? '📊' : classification.classification === 'opinion' ? '💭' : '⚠️';
+      response += `${emoji} ${classification.classification.toUpperCase()} content\n\n`;
     }
     
-    if (factCheck.analysis) {
-      response += `📝 **Analysis**: ${factCheck.analysis}\n\n`;
-    }
-    
-    response += `💡 **Recommendations**:\n`;
-    response += `• Cross-reference with multiple reliable sources\n`;
-    response += `• Verify the original source and publication date\n`;
-    response += `• Look for expert opinions on the topic\n`;
-    
+    // Key recommendations (shortened)
+    response += `💡 **Quick Tips:**\n`;
     if (classification.classification === 'misleading') {
-      response += `• ⚠️ Be extra cautious - content flagged as potentially misleading\n`;
+      response += `• ⚠️ HIGH CAUTION - Potentially misleading\n`;
     }
-    
-    if (sentiment.sentiment === 'NEGATIVE') {
-      response += `• 🧠 Consider potential emotional bias in the content\n`;
-    }
+    response += `• Verify with 2-3 reliable sources\n`;
+    response += `• Check publication date & author\n`;
     
     return response;
   }
@@ -2380,41 +2414,25 @@ class FactCheckChatbot {
     
     // Health claims
     if (lowerMessage.includes('health') || lowerMessage.includes('medical') || lowerMessage.includes('cure') || lowerMessage.includes('vaccine')) {
-      return `I notice you're asking about health-related information. Here's my analysis:
+      return `🏥 **Health Information Analysis**
 
-⚠️ **Important**: Always consult healthcare professionals for medical advice.
+⚠️ Always consult healthcare professionals for medical advice.
 
 🔍 **Quick Check**: 
-• Verify with official health organizations (WHO, CDC, NHS)
-• Look for peer-reviewed scientific studies
-• Be cautious of miracle cure claims
-• Check if the source has medical credentials
+• Verify with WHO, CDC, or NHS
+• Look for peer-reviewed studies
+• Check source credentials
 
-💡 **Recommendations**:
-• Cross-reference with multiple medical sources
-• Consult your healthcare provider
-• Be wary of sensational health claims
-• Check publication dates for medical information`;
+💡 **Tips**: Cross-reference medical sources, avoid miracle cure claims.`;
     }
     
     // Scam detection
     if (lowerMessage.includes('scam') || lowerMessage.includes('fraud') || lowerMessage.includes('money') || lowerMessage.includes('winner')) {
-      return `I can help you identify potential scams! Here are key warning signs:
+      return `🚨 **Scam Detection Analysis**
 
-🚨 **Common Scam Indicators**:
-• Urgency tactics ("Act now!", "Limited time!")
-• Requests for personal/financial information
-• Too-good-to-be-true offers
-• Poor grammar or spelling
-• Unsolicited contact
+**Red Flags**: Urgency tactics, personal info requests, too-good-to-be-true offers
 
-🛡️ **Protection Tips**:
-• Never share personal information with unknown contacts
-• Verify independently through official channels
-• Be skeptical of unexpected winnings or offers
-• Report suspicious content to authorities
-
-Would you like me to analyze specific content for scam indicators?`;
+🛡️ **Tips**: Never share personal info, verify through official channels, report suspicious content.`;
     }
     
     // News verification
@@ -2486,6 +2504,21 @@ You can also try asking:
 • "Is this a scam?"
 • "Verify this social media post"`;
   }
+
+  // Clear chat function
+  clearChat() {
+    if (this.chatMessages) {
+      this.chatMessages.innerHTML = '';
+    }
+    if (this.chatInput) {
+      this.chatInput.value = '';
+      this.chatInput.focus();
+    }
+    this.conversationHistory = [];
+    
+    // Add welcome message back
+    this.addMessage('👋 Hi! I\'m your AI fact-checking assistant. Send me any content you\'d like me to analyze for credibility and accuracy.', 'bot');
+  }
 }
 
 // Global functions for suggested questions
@@ -2500,6 +2533,13 @@ function sendSuggestedQuestion(question) {
 function sendChatMessage() {
   if (window.factCheckChatbot) {
     window.factCheckChatbot.sendMessage();
+  }
+}
+
+// Global function to clear chat
+function clearChat() {
+  if (window.factCheckChatbot) {
+    window.factCheckChatbot.clearChat();
   }
 }
 
