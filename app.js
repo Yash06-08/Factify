@@ -2572,6 +2572,11 @@ class FactCheckChatbot {
 
     let response = `**VERDICT: ${verdictEmoji} ${clearVerdict}**\n\n`;
     
+    // Add Gemini brief explanation (70 words) if available
+    if (factCheck.briefExplanation) {
+      response += `**Brief Explanation:**\n${factCheck.briefExplanation}\n\n`;
+    }
+    
     // Complete statement with explanation
     let completeStatement = '';
     

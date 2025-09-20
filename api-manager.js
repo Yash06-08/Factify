@@ -374,6 +374,9 @@ class GeminiAPIService {
 
               Provide a comprehensive assessment with the following structure:
 
+              **BRIEF EXPLANATION:**
+              [Provide a concise 70-word explanation about this fact/claim - what it is, why it matters, and key context]
+
               **CREDIBILITY SCORE:** [0-100] with clear reasoning
 
               **WEB RESEARCH FINDINGS:**
@@ -411,6 +414,7 @@ class GeminiAPIService {
         const credibilityScore = scoreMatch ? parseInt(scoreMatch[1]) : 50;
         
         // Extract different sections
+        const briefExplanation = this.extractSection(text, 'BRIEF EXPLANATION');
         const webResearch = this.extractSection(text, 'WEB RESEARCH FINDINGS');
         const detailedExplanation = this.extractSection(text, 'DETAILED EXPLANATION');
         const currentContext = this.extractSection(text, 'CURRENT CONTEXT');
@@ -420,6 +424,7 @@ class GeminiAPIService {
           success: true,
           credibilityScore,
           analysis: text,
+          briefExplanation: briefExplanation,
           webResearch: webResearch,
           detailedExplanation: detailedExplanation,
           currentContext: currentContext,
