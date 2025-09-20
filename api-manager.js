@@ -702,23 +702,24 @@ class WikiFactCheckService {
       // Enhanced fact-checking for health claims
       if (lowerClaim.includes('cure cancer') || lowerClaim.includes('miracle cure')) {
         analysis.trueFalseRating = 'FALSE';
-        analysis.whyWrong = 'No single "miracle cure" for cancer exists. Cancer treatment requires evidence-based medical approaches including surgery, chemotherapy, radiation, and immunotherapy.';
-        analysis.correctFact = 'Cancer treatment involves multiple evidence-based therapies. Current treatments include surgery, chemotherapy, radiation therapy, immunotherapy, and targeted therapy, often used in combination.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Claims of "miracle cures" for cancer are fundamentally flawed because: (1) Cancer is not a single disease but over 200 different diseases, each requiring specific treatments, (2) Legitimate cancer treatments undergo rigorous clinical trials involving thousands of patients over many years, (3) The FDA requires extensive safety and efficacy data before approval, (4) "Miracle cure" claims typically lack peer-reviewed scientific evidence, (5) They often exploit desperate patients and delay proper medical treatment, potentially causing harm or death.';
+        analysis.correctFact = 'GIST - RIGHT: Cancer treatment is a complex, evidence-based medical field. Effective treatments include surgery (removing tumors), chemotherapy (drugs that kill cancer cells), radiation therapy (high-energy beams), immunotherapy (boosting immune system), targeted therapy (attacking specific cancer cell features), and hormone therapy. These treatments are often combined based on cancer type, stage, and patient factors. Survival rates have significantly improved due to early detection and these scientifically-proven treatments.';
         analysis.citationLinks = [
           'https://www.cancer.gov/about-cancer/treatment/types',
           'https://www.who.int/news-room/fact-sheets/detail/cancer'
         ];
       } else if (lowerClaim.includes('vaccine') && (lowerClaim.includes('autism') || lowerClaim.includes('cause'))) {
         analysis.trueFalseRating = 'FALSE';
-        analysis.whyWrong = 'Multiple large-scale studies have found no link between vaccines and autism. The original study claiming this link was retracted due to fraud.';
-        analysis.correctFact = 'Vaccines are safe and do not cause autism. The CDC, WHO, and numerous peer-reviewed studies confirm vaccine safety and effectiveness.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: The vaccine-autism link is false because: (1) The original 1998 study by Andrew Wakefield was retracted for fraud - he falsified data and had financial conflicts of interest, (2) Multiple large-scale studies involving millions of children found no correlation, (3) Autism symptoms often become apparent around the same age as routine vaccinations, creating false correlation, (4) Autism has strong genetic components and begins in utero, before any vaccinations, (5) Countries with different vaccination schedules show similar autism rates, (6) Unvaccinated children develop autism at the same rates as vaccinated children.';
+        analysis.correctFact = 'GIST - RIGHT: Vaccines are among the safest and most effective medical interventions. They undergo extensive safety testing in clinical trials, continuous monitoring after approval, and have prevented millions of deaths from diseases like polio, measles, and whooping cough. The CDC, WHO, American Academy of Pediatrics, and every major medical organization worldwide confirm vaccine safety. Autism is a neurodevelopmental condition with genetic and environmental factors unrelated to vaccination.';
         analysis.citationLinks = [
           'https://www.cdc.gov/vaccinesafety/concerns/autism.html',
           'https://www.who.int/news-room/feature-stories/detail/vaccine-safety-and-the-global-advisory-committee-on-vaccine-safety'
         ];
       } else {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.correctFact = 'Health information should always be verified with qualified healthcare professionals and reputable medical organizations.';
+        analysis.whyWrong = 'Health claims require careful verification because misinformation can be dangerous to public health and individual safety.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Health information should always be verified with qualified healthcare professionals and reputable medical organizations like WHO, CDC, and peer-reviewed medical journals.';
         analysis.citationLinks = [
           'https://www.who.int/',
           'https://www.cdc.gov/'
@@ -737,23 +738,24 @@ class WikiFactCheckService {
       // Enhanced fact-checking for political claims
       if (lowerClaim.includes('election fraud') || lowerClaim.includes('stolen election')) {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.whyWrong = 'Claims of widespread election fraud require substantial evidence. Multiple audits and court cases have found no evidence of systematic fraud in recent elections.';
-        analysis.correctFact = 'Election security involves multiple safeguards including paper trails, audits, and bipartisan oversight. Claims should be verified through official election authorities.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Widespread election fraud claims are problematic because: (1) They require extraordinary evidence but typically rely on anecdotal reports or statistical anomalies with innocent explanations, (2) Over 60 court cases challenging the 2020 election were dismissed, many by Republican-appointed judges, (3) Multiple recounts and audits in contested states confirmed original results, (4) Election officials from both parties certified results, (5) Claims often misunderstand normal election processes (like mail-in ballot counting timelines), (6) Such claims undermine democratic institutions and public trust without substantial proof.';
+        analysis.correctFact = 'GIST - RIGHT: Elections have robust security measures including paper ballot backups, signature verification, poll watchers from both parties, post-election audits, and certification by bipartisan election officials. The U.S. election system is decentralized across 50 states and thousands of local jurisdictions, making coordinated fraud extremely difficult. CISA called the 2020 election "the most secure in American history" due to enhanced security measures and transparency.';
         analysis.citationLinks = [
           'https://www.cisa.gov/election-security',
           'https://www.eac.gov/election-officials/election-security'
         ];
       } else if (lowerClaim.includes('voting machine') && lowerClaim.includes('hack')) {
         analysis.trueFalseRating = 'PARTIALLY_TRUE';
-        analysis.whyWrong = 'While cybersecurity is a concern, voting machines have multiple security layers and are not connected to the internet during elections.';
-        analysis.correctFact = 'Voting machines use air-gapped systems, paper backups, and undergo rigorous testing. Security measures include encryption, audit trails, and post-election audits.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: While cybersecurity concerns about voting machines have some validity, claims of widespread hacking are exaggerated because: (1) Most voting machines are air-gapped (not connected to internet) during elections, (2) They use paper ballot backups for verification, (3) Pre-election testing and post-election audits detect anomalies, (4) Physical security measures protect machines, (5) Hacking would require coordinated access to thousands of machines across multiple jurisdictions, (6) Security researchers test machines in controlled environments, not real election conditions.';
+        analysis.correctFact = 'GIST - RIGHT: Voting machines do have cybersecurity considerations, which is why election systems use multiple security layers: air-gapped networks, encrypted data, paper audit trails, pre-election testing, post-election audits, physical security, and chain of custody procedures. Security researchers work with election officials to identify and fix vulnerabilities before elections.';
         analysis.citationLinks = [
           'https://www.cisa.gov/sites/default/files/publications/election-security-rumor-vs-reality_508_0.pdf',
           'https://www.brennancenter.org/our-work/research-reports/voting-machine-security-where-we-stand-six-months-new-hampshire'
         ];
       } else {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.correctFact = 'Political information should be verified through multiple independent sources including official government channels, reputable news organizations, and fact-checking services.';
+        analysis.whyWrong = 'Political information often contains bias, selective facts, or misleading context that requires careful verification.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Political information should be verified through multiple independent sources including official government channels, reputable news organizations, and fact-checking services.';
         analysis.citationLinks = [
           'https://www.factcheck.org/',
           'https://www.politifact.com/'
@@ -772,23 +774,24 @@ class WikiFactCheckService {
       // Enhanced fact-checking for scientific claims
       if (lowerClaim.includes('climate change') && lowerClaim.includes('hoax')) {
         analysis.trueFalseRating = 'FALSE';
-        analysis.whyWrong = 'Climate change is not a hoax. It is supported by overwhelming scientific consensus (97%+ of climate scientists) and extensive peer-reviewed research.';
-        analysis.correctFact = 'Climate change is real and primarily caused by human activities. Multiple lines of evidence include temperature records, ice core data, and observed environmental changes.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Climate change denial is wrong because: (1) 97%+ of actively publishing climate scientists agree human activities cause current climate change, (2) Multiple independent temperature datasets from different organizations show consistent warming, (3) Ice core data reveals CO2 levels are highest in 3 million years, (4) Observable effects include melting glaciers, rising sea levels, and shifting weather patterns, (5) Climate models from the 1970s accurately predicted current warming, (6) Fossil fuel companies\' own internal research confirmed climate risks while publicly denying them, (7) The physics of greenhouse gases has been understood since the 1800s.';
+        analysis.correctFact = 'GIST - RIGHT: Climate change is real and primarily caused by human activities, especially burning fossil fuels that release greenhouse gases. Evidence includes rising global temperatures, melting ice sheets, rising sea levels, ocean acidification, and shifting precipitation patterns. The scientific consensus is based on multiple lines of evidence from thousands of researchers worldwide using different methodologies that all point to the same conclusion.';
         analysis.citationLinks = [
           'https://climate.nasa.gov/evidence/',
           'https://www.ipcc.ch/reports/'
         ];
       } else if (lowerClaim.includes('evolution') && (lowerClaim.includes('theory') || lowerClaim.includes('just'))) {
         analysis.trueFalseRating = 'MISLEADING';
-        analysis.whyWrong = 'In science, "theory" means a well-substantiated explanation supported by evidence, not a guess. Evolution is both a fact and a theory.';
-        analysis.correctFact = 'Evolution is a scientific fact supported by extensive evidence from fossils, genetics, and direct observation. The theory of evolution explains how evolution works.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Calling evolution "just a theory" misunderstands scientific terminology because: (1) In science, a "theory" is the highest level of scientific explanation, not a guess (like germ theory of disease or gravitational theory), (2) Evolution is both an observed fact (species change over time) and a theory (explaining how it happens), (3) The evidence includes fossils showing transitional forms, DNA similarities between related species, observed speciation in laboratories and nature, (4) Biogeography shows species distribution patterns consistent with evolution, (5) Comparative anatomy reveals homologous structures, (6) Evolution is the unifying principle of all biological sciences.';
+        analysis.correctFact = 'GIST - RIGHT: Evolution is both a scientific fact (organisms change over time) and a theory (the explanation of how it works through natural selection, genetic drift, etc.). It\'s supported by evidence from fossils, genetics, direct observation, biogeography, and comparative anatomy. Scientific theories are well-substantiated explanations, not mere speculation.';
         analysis.citationLinks = [
           'https://www.nationalacademies.org/evolution/evidence',
           'https://www.nature.com/scitable/topicpage/evidence-for-evolution-an-eclectic-survey-13327636/'
         ];
       } else {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.correctFact = 'Scientific claims should be verified through peer-reviewed research and reputable scientific institutions.';
+        analysis.whyWrong = 'Scientific claims require peer review and replication to establish validity.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Scientific claims should be verified through peer-reviewed research and reputable scientific institutions.';
         analysis.citationLinks = [
           'https://www.ncbi.nlm.nih.gov/pubmed/',
           'https://scholar.google.com/'
@@ -807,24 +810,24 @@ class WikiFactCheckService {
       // Enhanced fact-checking for conspiracy theories
       if (lowerClaim.includes('5g') && (lowerClaim.includes('covid') || lowerClaim.includes('virus'))) {
         analysis.trueFalseRating = 'FALSE';
-        analysis.whyWrong = '5G technology does not cause or spread COVID-19. Viruses cannot spread through radio waves, and COVID-19 has spread in countries without 5G networks.';
-        analysis.correctFact = 'COVID-19 is caused by the SARS-CoV-2 virus and spreads through respiratory droplets. 5G is a radio frequency technology unrelated to viral transmission.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: The 5G-COVID connection is false because: (1) Viruses are biological entities that cannot be transmitted through radio waves or electromagnetic radiation, (2) COVID-19 is caused by SARS-CoV-2 virus, identified through genetic sequencing, (3) The virus spreads through respiratory droplets and aerosols from infected people, (4) COVID-19 spread rapidly in countries without 5G networks (like Iran initially), (5) 5G operates at frequencies (24-100 GHz) that are non-ionizing and cannot damage DNA or cells, (6) Radio waves have been used for decades without causing viral pandemics, (7) The timeline doesn\'t match - COVID-19 originated in areas without widespread 5G deployment.';
+        analysis.correctFact = 'GIST - RIGHT: COVID-19 is caused by SARS-CoV-2 virus and spreads person-to-person through respiratory droplets when infected people cough, sneeze, talk, or breathe. 5G is a telecommunications technology using radio frequencies for faster internet, completely unrelated to viral transmission. The virus was identified through scientific methods including genetic sequencing and electron microscopy.';
         analysis.citationLinks = [
           'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters',
           'https://www.fcc.gov/consumers/guides/5g-mobile-wireless-technology'
         ];
       } else if (lowerClaim.includes('flat earth')) {
         analysis.trueFalseRating = 'FALSE';
-        analysis.whyWrong = 'The Earth is not flat. Multiple lines of evidence including satellite imagery, physics, and direct observation confirm Earth is a sphere.';
-        analysis.correctFact = 'Earth is an oblate spheroid (slightly flattened sphere). This is confirmed by satellite imagery, physics, navigation systems, and centuries of scientific observation.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Flat Earth claims are wrong because: (1) Satellite imagery from multiple countries shows Earth\'s curvature, (2) Ships disappear hull-first over the horizon due to curvature, (3) Different constellations are visible from different latitudes, (4) Time zones exist because Earth rotates as a sphere, (5) Gravity pulls objects toward Earth\'s center, creating spherical shape, (6) Lunar eclipses show Earth\'s round shadow on the moon, (7) Physics of planetary formation requires spherical shapes for large bodies, (8) GPS and navigation systems work based on spherical Earth calculations, (9) Airline flight paths make sense on a globe but not on flat maps.';
+        analysis.correctFact = 'GIST - RIGHT: Earth is an oblate spheroid (slightly flattened sphere due to rotation) confirmed by satellite imagery, physics, navigation systems, astronomy, and direct observation. The spherical shape results from gravity pulling matter toward the center and is consistent with all other planets and large celestial bodies. This has been known since ancient Greek times and proven through multiple independent methods.';
         analysis.citationLinks = [
           'https://www.nasa.gov/audience/forstudents/k-4/stories/nasa-knows/what-is-earth-k4.html',
           'https://earthobservatory.nasa.gov/'
         ];
       } else {
         analysis.trueFalseRating = 'HIGHLY_QUESTIONABLE';
-        analysis.whyWrong = 'Conspiracy theories typically lack credible evidence and rely on speculation rather than verifiable facts.';
-        analysis.correctFact = 'Extraordinary claims require extraordinary evidence. Verify information through multiple credible, independent sources.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Conspiracy theories are problematic because they typically: (1) Lack credible evidence and rely on speculation, (2) Use confirmation bias to interpret ambiguous information, (3) Assume massive coordination without evidence, (4) Ignore simpler explanations (Occam\'s razor), (5) Resist falsification and dismiss contradictory evidence, (6) Often target vulnerable people during uncertain times.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Extraordinary claims require extraordinary evidence. Information should be verified through multiple credible, independent sources using scientific methods and peer review.';
         analysis.citationLinks = [
           'https://www.snopes.com/',
           'https://www.factcheck.org/'
@@ -837,15 +840,16 @@ class WikiFactCheckService {
       // Analyze for common misinformation patterns
       if (analysis.redFlags.length > 2) {
         analysis.trueFalseRating = 'HIGHLY_QUESTIONABLE';
-        analysis.whyWrong = 'Content contains multiple red flags including sensational language, emotional manipulation, or unsubstantiated claims.';
-        analysis.correctFact = 'Information should be verified through multiple independent, credible sources before accepting as factual.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Content is highly questionable because it contains multiple red flags: (1) Uses sensational or emotional language designed to provoke strong reactions, (2) Makes unsubstantiated claims without credible evidence, (3) May use manipulation tactics like urgency or fear, (4) Lacks proper sourcing or citations, (5) Contains patterns commonly associated with misinformation campaigns.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Information should be verified through multiple independent, credible sources before accepting as factual. Look for peer-reviewed research, official statements, and cross-reference with established fact-checking organizations.';
       } else if (analysis.redFlags.length > 0) {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.whyWrong = 'Content shows some concerning patterns that require additional verification.';
-        analysis.correctFact = 'Cross-reference this information with authoritative sources and fact-checking organizations.';
+        analysis.whyWrong = 'DETAILED EXPLANATION: Content shows concerning patterns that require verification: (1) Contains some language or claims that raise credibility concerns, (2) May lack sufficient sourcing or context, (3) Could be missing important nuances or counterarguments, (4) Requires additional fact-checking to determine accuracy.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: Cross-reference this information with authoritative sources and fact-checking organizations. Look for original sources, expert opinions, and multiple perspectives before drawing conclusions.';
       } else {
         analysis.trueFalseRating = 'NEEDS_VERIFICATION';
-        analysis.correctFact = 'All claims should be independently verified through reliable sources.';
+        analysis.whyWrong = 'All claims require verification to ensure accuracy and prevent spread of misinformation.';
+        analysis.correctFact = 'GIST - VERIFICATION NEEDED: All claims should be independently verified through reliable sources including academic institutions, government agencies, and established news organizations.';
       }
       
       // Default citation links

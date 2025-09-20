@@ -2623,12 +2623,12 @@ class FactCheckChatbot {
       response += `\n🎯 **FACT-CHECK RATING**: ${ratingEmoji[wikiFactCheck.trueFalseRating] || '❓'} ${wikiFactCheck.trueFalseRating.replace(/_/g, ' ')}\n`;
     }
 
-    // Why it's wrong (if applicable)
+    // Why it's wrong (if applicable) - Enhanced with detailed explanations
     if (wikiFactCheck.whyWrong) {
       response += `\n❌ **Why This is Wrong:**\n${wikiFactCheck.whyWrong}\n`;
     }
 
-    // Correct fact
+    // Correct fact - Enhanced with gist summaries
     if (wikiFactCheck.correctFact) {
       response += `\n✅ **Correct Information:**\n${wikiFactCheck.correctFact}\n`;
     }
@@ -2690,17 +2690,18 @@ class FactCheckChatbot {
       // Specific health misinformation patterns
       if (lowerMessage.includes('cure cancer') || lowerMessage.includes('miracle cure')) {
         response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
-        response += `**Why This is Wrong:**\nNo single "miracle cure" for cancer exists. Cancer treatment requires evidence-based medical approaches.\n\n`;
-        response += `**Correct Information:**\nCancer treatment involves multiple evidence-based therapies including surgery, chemotherapy, radiation therapy, immunotherapy, and targeted therapy.\n\n`;
+        response += `**Why This is Wrong:**\nDETAILED EXPLANATION: Claims of "miracle cures" for cancer are fundamentally flawed because: (1) Cancer is not a single disease but over 200 different diseases, each requiring specific treatments, (2) Legitimate cancer treatments undergo rigorous clinical trials involving thousands of patients over many years, (3) The FDA requires extensive safety and efficacy data before approval, (4) "Miracle cure" claims typically lack peer-reviewed scientific evidence, (5) They often exploit desperate patients and delay proper medical treatment, potentially causing harm or death.\n\n`;
+        response += `**Correct Information:**\nGIST - RIGHT: Cancer treatment is a complex, evidence-based medical field. Effective treatments include surgery (removing tumors), chemotherapy (drugs that kill cancer cells), radiation therapy (high-energy beams), immunotherapy (boosting immune system), targeted therapy (attacking specific cancer cell features), and hormone therapy. These treatments are often combined based on cancer type, stage, and patient factors. Survival rates have significantly improved due to early detection and these scientifically-proven treatments.\n\n`;
         response += `📚 **Reliable Sources & Citations:**\n1. https://www.cancer.gov/about-cancer/treatment/types\n2. https://www.who.int/news-room/fact-sheets/detail/cancer\n\n`;
       } else if (lowerMessage.includes('vaccine') && (lowerMessage.includes('autism') || lowerMessage.includes('cause'))) {
         response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
-        response += `**Why This is Wrong:**\nMultiple large-scale studies have found no link between vaccines and autism. The original study was retracted due to fraud.\n\n`;
-        response += `**Correct Information:**\nVaccines are safe and do not cause autism. The CDC, WHO, and numerous peer-reviewed studies confirm vaccine safety.\n\n`;
+        response += `**Why This is Wrong:**\nDETAILED EXPLANATION: The vaccine-autism link is false because: (1) The original 1998 study by Andrew Wakefield was retracted for fraud - he falsified data and had financial conflicts of interest, (2) Multiple large-scale studies involving millions of children found no correlation, (3) Autism symptoms often become apparent around the same age as routine vaccinations, creating false correlation, (4) Autism has strong genetic components and begins in utero, before any vaccinations, (5) Countries with different vaccination schedules show similar autism rates, (6) Unvaccinated children develop autism at the same rates as vaccinated children.\n\n`;
+        response += `**Correct Information:**\nGIST - RIGHT: Vaccines are among the safest and most effective medical interventions. They undergo extensive safety testing in clinical trials, continuous monitoring after approval, and have prevented millions of deaths from diseases like polio, measles, and whooping cough. The CDC, WHO, American Academy of Pediatrics, and every major medical organization worldwide confirm vaccine safety. Autism is a neurodevelopmental condition with genetic and environmental factors unrelated to vaccination.\n\n`;
         response += `📚 **Reliable Sources & Citations:**\n1. https://www.cdc.gov/vaccinesafety/concerns/autism.html\n2. https://www.who.int/news-room/feature-stories/detail/vaccine-safety\n\n`;
       } else {
         response += `❓ **FACT-CHECK RATING**: NEEDS VERIFICATION\n\n`;
-        response += `**Correct Information:**\nHealth information should always be verified with qualified healthcare professionals.\n\n`;
+        response += `**Why This Needs Verification:**\nHealth claims require careful verification because misinformation can be dangerous to public health and individual safety.\n\n`;
+        response += `**Correct Information:**\nGIST - VERIFICATION NEEDED: Health information should always be verified with qualified healthcare professionals and reputable medical organizations like WHO, CDC, and peer-reviewed medical journals.\n\n`;
         response += `📚 **Reliable Sources & Citations:**\n1. https://www.who.int/\n2. https://www.cdc.gov/\n\n`;
       }
       
