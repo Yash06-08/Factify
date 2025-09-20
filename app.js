@@ -2301,9 +2301,9 @@ class FactCheckChatbot {
     this.conversationHistory.push({ role: 'user', content: message });
 
     try {
-      // Use backend service if available
-      if (typeof backendService !== 'undefined' && backendService !== null) {
-        const analysis = await backendService.analyzeContent(message, 'text');
+      // Use API manager if available
+      if (typeof apiManager !== 'undefined' && apiManager !== null) {
+        const analysis = await apiManager.analyzeContent(message, 'text');
         const response = this.generateResponseFromAnalysis(analysis, message);
         
         setTimeout(() => {
@@ -2331,33 +2331,45 @@ class FactCheckChatbot {
   }
 
   generateResponseFromAnalysis(analysis, originalMessage) {
-    if (!analysis.analysis || !analysis.analysis.factCheck) {
+    if (!analysis || !analysis.success) {
       return this.generateLocalResponse(originalMessage);
     }
 
-    const factCheck = analysis.analysis.factCheck;
-    let response = `Based on my analysis:\n\n`;
+    const factCheck = analysis.analysis?.factCheck || {};
+    const sentiment = analysis.analysis?.sentiment || {};
+    const classification = analysis.analysis?.classification || {};
     
-    response += `🎯 **Credibility Score**: ${factCheck.credibilityScore}/100\n`;
-    response += `📊 **Verdict**: ${factCheck.verdict.toUpperCase()}\n\n`;
+    let response = `Based on my AI analysis:\n\n`;
     
-    if (factCheck.explanation) {
-      response += `📝 **Analysis**: ${factCheck.explanation}\n\n`;
+    if (factCheck.credibilityScore) {
+      response += `🎯 **Credibility Score**: ${factCheck.credibilityScore}/100\n`;
     }
     
-    if (factCheck.redFlags && factCheck.redFlags.length > 0) {
-      response += `⚠️ **Red Flags**:\n`;
-      factCheck.redFlags.forEach(flag => {
-        response += `• ${flag}\n`;
-      });
-      response += '\n';
+    if (sentiment.sentiment) {
+      const sentimentEmoji = sentiment.sentiment === 'POSITIVE' ? '😊' : sentiment.sentiment === 'NEGATIVE' ? '😟' : '😐';
+      response += `${sentimentEmoji} **Sentiment**: ${sentiment.sentiment} (${Math.round(sentiment.confidence * 100)}% confidence)\n`;
     }
     
-    if (factCheck.recommendations && factCheck.recommendations.length > 0) {
-      response += `💡 **Recommendations**:\n`;
-      factCheck.recommendations.forEach(rec => {
-        response += `• ${rec}\n`;
-      });
+    if (classification.classification) {
+      const classEmoji = classification.classification === 'factual' ? '📊' : classification.classification === 'opinion' ? '💭' : '⚠️';
+      response += `${classEmoji} **Content Type**: ${classification.classification} (${Math.round(classification.confidence * 100)}% confidence)\n\n`;
+    }
+    
+    if (factCheck.analysis) {
+      response += `📝 **Analysis**: ${factCheck.analysis}\n\n`;
+    }
+    
+    response += `💡 **Recommendations**:\n`;
+    response += `• Cross-reference with multiple reliable sources\n`;
+    response += `• Verify the original source and publication date\n`;
+    response += `• Look for expert opinions on the topic\n`;
+    
+    if (classification.classification === 'misleading') {
+      response += `• ⚠️ Be extra cautious - content flagged as potentially misleading\n`;
+    }
+    
+    if (sentiment.sentiment === 'NEGATIVE') {
+      response += `• 🧠 Consider potential emotional bias in the content\n`;
     }
     
     return response;
@@ -2505,13 +2517,13 @@ class APIStatusChecker {
     this.showCheckingState();
     
     try {
-      if (typeof backendService !== 'undefined' && backendService !== null) {
-        const healthCheck = await backendService.healthCheck();
+      if (typeof apiManager !== 'undefined' && apiManager !== null) {
+        const healthCheck = await apiManager.healthCheck();
         this.updateServiceStatuses(healthCheck);
         this.lastCheck = new Date();
       } else {
-        console.warn('Backend service not available, showing fallback status');
-        // Fallback when backend service is not available
+        console.warn('API Manager not available, showing fallback status');
+        // Fallback when API manager is not available
         this.showFallbackStatus();
       }
     } catch (error) {
@@ -2712,9 +2724,9 @@ function initVSCodeFeatures() {
   // Initialize API status checker
   apiStatusChecker = new APIStatusChecker();
   
-  // Initialize backend service
-  if (typeof initBackendService === 'function') {
-    initBackendService();
+  // Initialize API manager
+  if (typeof initializeAPIManager === 'function') {
+    initializeAPIManager();
   }
   
   // Set dark theme by default for VS Code look
@@ -2750,9 +2762,9 @@ async function analyzeContentWithBackend(content, type) {
   try {
     let result;
     
-    // Use backend service if available
-    if (typeof backendService !== 'undefined' && backendService !== null) {
-      const analysis = await backendService.analyzeContent(content, type);
+    // Use API manager if available
+    if (typeof apiManager !== 'undefined' && apiManager !== null) {
+      const analysis = await apiManager.analyzeContent(content, type);
       result = convertBackendResult(analysis);
     } else {
       // Fallback to original mock analysis
@@ -2781,21 +2793,52 @@ async function analyzeContentWithBackend(content, type) {
 }
 
 function convertBackendResult(backendAnalysis) {
-  if (!backendAnalysis.analysis || !backendAnalysis.analysis.factCheck) {
+  if (!backendAnalysis || !backendAnalysis.success) {
     return generateMockResult('');
   }
   
-  const factCheck = backendAnalysis.analysis.factCheck;
+  const factCheck = backendAnalysis.analysis?.factCheck || {};
+  const sentiment = backendAnalysis.analysis?.sentiment || {};
+  const classification = backendAnalysis.analysis?.classification || {};
+  
+  // Calculate credibility score based on available data
+  let credibilityScore = factCheck.credibilityScore || 50;
+  
+  // Adjust score based on sentiment and classification
+  if (sentiment.sentiment === 'NEGATIVE' && classification.classification === 'misleading') {
+    credibilityScore = Math.max(10, credibilityScore - 20);
+  } else if (classification.classification === 'factual') {
+    credibilityScore = Math.min(90, credibilityScore + 10);
+  }
+  
+  // Determine verdict based on credibility score
+  let verdict = 'questionable';
+  if (credibilityScore > 70) {
+    verdict = 'likely_true';
+  } else if (credibilityScore < 30) {
+    verdict = 'likely_false';
+  }
+  
+  // Build explanation with all available analysis
+  let explanation = factCheck.analysis || 'AI analysis completed.';
+  if (sentiment.sentiment) {
+    explanation += ` Sentiment: ${sentiment.sentiment}.`;
+  }
+  if (classification.classification) {
+    explanation += ` Content type: ${classification.classification}.`;
+  }
   
   return {
-    verdict: factCheck.verdict || 'questionable',
-    confidence: factCheck.credibilityScore || 50,
-    explanation: factCheck.explanation || 'Analysis completed using AI fact-checking.',
-    recommendations: factCheck.recommendations || [
-      'Verify with additional sources',
-      'Check original source credibility',
-      'Look for corroborating evidence'
-    ]
+    verdict,
+    confidence: credibilityScore,
+    explanation,
+    recommendations: [
+      'Cross-reference with multiple reliable sources',
+      'Check the publication date and context',
+      'Verify author credentials and expertise',
+      classification.classification === 'misleading' ? 'Be cautious - content may be misleading' : null,
+      sentiment.sentiment === 'NEGATIVE' ? 'Consider emotional bias in the content' : null
+    ].filter(Boolean)
   };
 }
 
