@@ -681,7 +681,13 @@ class WikiFactCheckService {
       reasoning: '',
       categories: this.categorizeContent(lowerClaim),
       redFlags: this.detectRedFlags(lowerClaim),
-      credibilityScore: 50
+      credibilityScore: 50,
+      // Enhanced fact-checking fields
+      trueFalseRating: 'UNVERIFIED',
+      whyWrong: '',
+      correctFact: '',
+      citationLinks: [],
+      relatedFacts: []
     };
 
     // Health claims
@@ -692,6 +698,32 @@ class WikiFactCheckService {
       analysis.reasoning = 'Health claims require verification from medical authorities';
       analysis.sources = ['WHO', 'CDC', 'Medical journals'];
       analysis.evidence = ['Requires peer-reviewed medical research', 'Check with healthcare professionals'];
+      
+      // Enhanced fact-checking for health claims
+      if (lowerClaim.includes('cure cancer') || lowerClaim.includes('miracle cure')) {
+        analysis.trueFalseRating = 'FALSE';
+        analysis.whyWrong = 'No single "miracle cure" for cancer exists. Cancer treatment requires evidence-based medical approaches including surgery, chemotherapy, radiation, and immunotherapy.';
+        analysis.correctFact = 'Cancer treatment involves multiple evidence-based therapies. Current treatments include surgery, chemotherapy, radiation therapy, immunotherapy, and targeted therapy, often used in combination.';
+        analysis.citationLinks = [
+          'https://www.cancer.gov/about-cancer/treatment/types',
+          'https://www.who.int/news-room/fact-sheets/detail/cancer'
+        ];
+      } else if (lowerClaim.includes('vaccine') && (lowerClaim.includes('autism') || lowerClaim.includes('cause'))) {
+        analysis.trueFalseRating = 'FALSE';
+        analysis.whyWrong = 'Multiple large-scale studies have found no link between vaccines and autism. The original study claiming this link was retracted due to fraud.';
+        analysis.correctFact = 'Vaccines are safe and do not cause autism. The CDC, WHO, and numerous peer-reviewed studies confirm vaccine safety and effectiveness.';
+        analysis.citationLinks = [
+          'https://www.cdc.gov/vaccinesafety/concerns/autism.html',
+          'https://www.who.int/news-room/feature-stories/detail/vaccine-safety-and-the-global-advisory-committee-on-vaccine-safety'
+        ];
+      } else {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.correctFact = 'Health information should always be verified with qualified healthcare professionals and reputable medical organizations.';
+        analysis.citationLinks = [
+          'https://www.who.int/',
+          'https://www.cdc.gov/'
+        ];
+      }
     }
     
     // Political claims
@@ -701,6 +733,32 @@ class WikiFactCheckService {
       analysis.credibilityScore = 40;
       analysis.reasoning = 'Political information requires cross-verification';
       analysis.sources = ['Official government sources', 'Multiple news outlets', 'Election authorities'];
+      
+      // Enhanced fact-checking for political claims
+      if (lowerClaim.includes('election fraud') || lowerClaim.includes('stolen election')) {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.whyWrong = 'Claims of widespread election fraud require substantial evidence. Multiple audits and court cases have found no evidence of systematic fraud in recent elections.';
+        analysis.correctFact = 'Election security involves multiple safeguards including paper trails, audits, and bipartisan oversight. Claims should be verified through official election authorities.';
+        analysis.citationLinks = [
+          'https://www.cisa.gov/election-security',
+          'https://www.eac.gov/election-officials/election-security'
+        ];
+      } else if (lowerClaim.includes('voting machine') && lowerClaim.includes('hack')) {
+        analysis.trueFalseRating = 'PARTIALLY_TRUE';
+        analysis.whyWrong = 'While cybersecurity is a concern, voting machines have multiple security layers and are not connected to the internet during elections.';
+        analysis.correctFact = 'Voting machines use air-gapped systems, paper backups, and undergo rigorous testing. Security measures include encryption, audit trails, and post-election audits.';
+        analysis.citationLinks = [
+          'https://www.cisa.gov/sites/default/files/publications/election-security-rumor-vs-reality_508_0.pdf',
+          'https://www.brennancenter.org/our-work/research-reports/voting-machine-security-where-we-stand-six-months-new-hampshire'
+        ];
+      } else {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.correctFact = 'Political information should be verified through multiple independent sources including official government channels, reputable news organizations, and fact-checking services.';
+        analysis.citationLinks = [
+          'https://www.factcheck.org/',
+          'https://www.politifact.com/'
+        ];
+      }
     }
     
     // Scientific claims
@@ -710,6 +768,32 @@ class WikiFactCheckService {
       analysis.credibilityScore = 75;
       analysis.reasoning = 'Contains scientific references, verify original sources';
       analysis.sources = ['Peer-reviewed journals', 'Research institutions'];
+      
+      // Enhanced fact-checking for scientific claims
+      if (lowerClaim.includes('climate change') && lowerClaim.includes('hoax')) {
+        analysis.trueFalseRating = 'FALSE';
+        analysis.whyWrong = 'Climate change is not a hoax. It is supported by overwhelming scientific consensus (97%+ of climate scientists) and extensive peer-reviewed research.';
+        analysis.correctFact = 'Climate change is real and primarily caused by human activities. Multiple lines of evidence include temperature records, ice core data, and observed environmental changes.';
+        analysis.citationLinks = [
+          'https://climate.nasa.gov/evidence/',
+          'https://www.ipcc.ch/reports/'
+        ];
+      } else if (lowerClaim.includes('evolution') && (lowerClaim.includes('theory') || lowerClaim.includes('just'))) {
+        analysis.trueFalseRating = 'MISLEADING';
+        analysis.whyWrong = 'In science, "theory" means a well-substantiated explanation supported by evidence, not a guess. Evolution is both a fact and a theory.';
+        analysis.correctFact = 'Evolution is a scientific fact supported by extensive evidence from fossils, genetics, and direct observation. The theory of evolution explains how evolution works.';
+        analysis.citationLinks = [
+          'https://www.nationalacademies.org/evolution/evidence',
+          'https://www.nature.com/scitable/topicpage/evidence-for-evolution-an-eclectic-survey-13327636/'
+        ];
+      } else {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.correctFact = 'Scientific claims should be verified through peer-reviewed research and reputable scientific institutions.';
+        analysis.citationLinks = [
+          'https://www.ncbi.nlm.nih.gov/pubmed/',
+          'https://scholar.google.com/'
+        ];
+      }
     }
     
     // Conspiracy theories
@@ -719,6 +803,59 @@ class WikiFactCheckService {
       analysis.credibilityScore = 15;
       analysis.reasoning = 'Contains conspiracy theory indicators';
       analysis.evidence = ['Lacks credible evidence', 'Uses emotional language'];
+      
+      // Enhanced fact-checking for conspiracy theories
+      if (lowerClaim.includes('5g') && (lowerClaim.includes('covid') || lowerClaim.includes('virus'))) {
+        analysis.trueFalseRating = 'FALSE';
+        analysis.whyWrong = '5G technology does not cause or spread COVID-19. Viruses cannot spread through radio waves, and COVID-19 has spread in countries without 5G networks.';
+        analysis.correctFact = 'COVID-19 is caused by the SARS-CoV-2 virus and spreads through respiratory droplets. 5G is a radio frequency technology unrelated to viral transmission.';
+        analysis.citationLinks = [
+          'https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters',
+          'https://www.fcc.gov/consumers/guides/5g-mobile-wireless-technology'
+        ];
+      } else if (lowerClaim.includes('flat earth')) {
+        analysis.trueFalseRating = 'FALSE';
+        analysis.whyWrong = 'The Earth is not flat. Multiple lines of evidence including satellite imagery, physics, and direct observation confirm Earth is a sphere.';
+        analysis.correctFact = 'Earth is an oblate spheroid (slightly flattened sphere). This is confirmed by satellite imagery, physics, navigation systems, and centuries of scientific observation.';
+        analysis.citationLinks = [
+          'https://www.nasa.gov/audience/forstudents/k-4/stories/nasa-knows/what-is-earth-k4.html',
+          'https://earthobservatory.nasa.gov/'
+        ];
+      } else {
+        analysis.trueFalseRating = 'HIGHLY_QUESTIONABLE';
+        analysis.whyWrong = 'Conspiracy theories typically lack credible evidence and rely on speculation rather than verifiable facts.';
+        analysis.correctFact = 'Extraordinary claims require extraordinary evidence. Verify information through multiple credible, independent sources.';
+        analysis.citationLinks = [
+          'https://www.snopes.com/',
+          'https://www.factcheck.org/'
+        ];
+      }
+    }
+
+    // Default case for general claims
+    if (analysis.trueFalseRating === 'UNVERIFIED') {
+      // Analyze for common misinformation patterns
+      if (analysis.redFlags.length > 2) {
+        analysis.trueFalseRating = 'HIGHLY_QUESTIONABLE';
+        analysis.whyWrong = 'Content contains multiple red flags including sensational language, emotional manipulation, or unsubstantiated claims.';
+        analysis.correctFact = 'Information should be verified through multiple independent, credible sources before accepting as factual.';
+      } else if (analysis.redFlags.length > 0) {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.whyWrong = 'Content shows some concerning patterns that require additional verification.';
+        analysis.correctFact = 'Cross-reference this information with authoritative sources and fact-checking organizations.';
+      } else {
+        analysis.trueFalseRating = 'NEEDS_VERIFICATION';
+        analysis.correctFact = 'All claims should be independently verified through reliable sources.';
+      }
+      
+      // Default citation links
+      if (analysis.citationLinks.length === 0) {
+        analysis.citationLinks = [
+          'https://www.snopes.com/',
+          'https://www.factcheck.org/',
+          'https://www.politifact.com/'
+        ];
+      }
     }
 
     // Adjust score based on red flags

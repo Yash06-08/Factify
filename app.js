@@ -2609,6 +2609,38 @@ class FactCheckChatbot {
       response += `• ${emoji} Type: ${classification.classification.toUpperCase()}\n`;
     }
     
+    // True/False Rating (most important)
+    if (wikiFactCheck.trueFalseRating) {
+      const ratingEmoji = {
+        'TRUE': '✅',
+        'FALSE': '❌',
+        'PARTIALLY_TRUE': '⚠️',
+        'MISLEADING': '🔄',
+        'NEEDS_VERIFICATION': '❓',
+        'HIGHLY_QUESTIONABLE': '🚫'
+      };
+      
+      response += `\n🎯 **FACT-CHECK RATING**: ${ratingEmoji[wikiFactCheck.trueFalseRating] || '❓'} ${wikiFactCheck.trueFalseRating.replace(/_/g, ' ')}\n`;
+    }
+
+    // Why it's wrong (if applicable)
+    if (wikiFactCheck.whyWrong) {
+      response += `\n❌ **Why This is Wrong:**\n${wikiFactCheck.whyWrong}\n`;
+    }
+
+    // Correct fact
+    if (wikiFactCheck.correctFact) {
+      response += `\n✅ **Correct Information:**\n${wikiFactCheck.correctFact}\n`;
+    }
+
+    // Citation links
+    if (wikiFactCheck.citationLinks && wikiFactCheck.citationLinks.length > 0) {
+      response += `\n📚 **Reliable Sources & Citations:**\n`;
+      wikiFactCheck.citationLinks.forEach((link, index) => {
+        response += `${index + 1}. ${link}\n`;
+      });
+    }
+
     // Red flags if any
     if (wikiFactCheck.redFlags && wikiFactCheck.redFlags.length > 0) {
       response += `\n🚩 **Red Flags Detected:**\n`;
@@ -2651,19 +2683,29 @@ class FactCheckChatbot {
   generateLocalResponse(message) {
     const lowerMessage = message.toLowerCase();
     
-    // Health claims
+    // Health claims with enhanced fact-checking
     if (lowerMessage.includes('health') || lowerMessage.includes('medical') || lowerMessage.includes('cure') || lowerMessage.includes('vaccine')) {
-      return `🏥 **Health Information Analysis**
-
-⚠️ **Important**: Always consult qualified healthcare professionals for medical advice.
-
-🔍 **Verification Steps**: 
-• Check with official health organizations (WHO, CDC, NHS)
-• Look for peer-reviewed scientific studies and clinical trials
-• Verify the author's medical credentials and expertise
-• Be cautious of sensational or "miracle cure" claims
-
-💡 **Red Flags**: Avoid sources that promise instant cures, use fear tactics, or lack proper citations to medical research.`;
+      let response = `🏥 **Health Information Fact-Check**\n\n`;
+      
+      // Specific health misinformation patterns
+      if (lowerMessage.includes('cure cancer') || lowerMessage.includes('miracle cure')) {
+        response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
+        response += `**Why This is Wrong:**\nNo single "miracle cure" for cancer exists. Cancer treatment requires evidence-based medical approaches.\n\n`;
+        response += `**Correct Information:**\nCancer treatment involves multiple evidence-based therapies including surgery, chemotherapy, radiation therapy, immunotherapy, and targeted therapy.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.cancer.gov/about-cancer/treatment/types\n2. https://www.who.int/news-room/fact-sheets/detail/cancer\n\n`;
+      } else if (lowerMessage.includes('vaccine') && (lowerMessage.includes('autism') || lowerMessage.includes('cause'))) {
+        response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
+        response += `**Why This is Wrong:**\nMultiple large-scale studies have found no link between vaccines and autism. The original study was retracted due to fraud.\n\n`;
+        response += `**Correct Information:**\nVaccines are safe and do not cause autism. The CDC, WHO, and numerous peer-reviewed studies confirm vaccine safety.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.cdc.gov/vaccinesafety/concerns/autism.html\n2. https://www.who.int/news-room/feature-stories/detail/vaccine-safety\n\n`;
+      } else {
+        response += `❓ **FACT-CHECK RATING**: NEEDS VERIFICATION\n\n`;
+        response += `**Correct Information:**\nHealth information should always be verified with qualified healthcare professionals.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.who.int/\n2. https://www.cdc.gov/\n\n`;
+      }
+      
+      response += `⚠️ **Important**: Always consult qualified healthcare professionals for medical advice.`;
+      return response;
     }
     
     // Scam detection
@@ -2683,74 +2725,89 @@ class FactCheckChatbot {
 • Report suspicious content to relevant authorities`;
     }
     
-    // News verification
+    // News verification with fact-checking
     if (lowerMessage.includes('news') || lowerMessage.includes('article') || lowerMessage.includes('headline')) {
-      return `I can help you verify news content! Here's how to check:
-
-📰 **News Verification Steps**:
-• Check the source's reputation and bias
-• Look for corroborating reports from other outlets
-• Verify publication date and author credentials
-• Check if quotes and statistics are properly sourced
-
-🔍 **Red Flags in News**:
-• Sensational or emotional headlines
-• Lack of author information
-• No credible sources cited
-• Extreme bias or one-sided reporting
-
-💡 **Reliable Sources**: Reuters, AP News, BBC, NPR, and established local newspapers typically maintain high journalistic standards.
-
-Share the article or headline you'd like me to analyze!`;
+      let response = `📰 **News Content Fact-Check**\n\n`;
+      
+      // Specific news misinformation patterns
+      if (lowerMessage.includes('election fraud') || lowerMessage.includes('stolen election')) {
+        response += `❓ **FACT-CHECK RATING**: NEEDS VERIFICATION\n\n`;
+        response += `**Why Claims Need Verification:**\nClaims of widespread election fraud require substantial evidence. Multiple audits and court cases have found no evidence of systematic fraud.\n\n`;
+        response += `**Correct Information:**\nElection security involves multiple safeguards including paper trails, audits, and bipartisan oversight.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.cisa.gov/election-security\n2. https://www.eac.gov/election-officials/election-security\n\n`;
+      } else if (lowerMessage.includes('climate change') && lowerMessage.includes('hoax')) {
+        response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
+        response += `**Why This is Wrong:**\nClimate change is not a hoax. It is supported by overwhelming scientific consensus (97%+ of climate scientists).\n\n`;
+        response += `**Correct Information:**\nClimate change is real and primarily caused by human activities, supported by extensive peer-reviewed research.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://climate.nasa.gov/evidence/\n2. https://www.ipcc.ch/reports/\n\n`;
+      } else {
+        response += `❓ **FACT-CHECK RATING**: READY TO ANALYZE\n\n`;
+        response += `**Correct Information:**\nNews should be verified through multiple independent sources and fact-checking organizations.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.factcheck.org/\n2. https://www.politifact.com/\n\n`;
+      }
+      
+      response += `🔍 **News Verification Steps**:\n• Check source reputation and bias\n• Look for corroborating reports\n• Verify publication date and author credentials\n• Check if quotes and statistics are sourced\n\nShare the article or headline you'd like me to analyze!`;
+      return response;
     }
     
-    // Social media posts
+    // Social media posts with fact-checking
     if (lowerMessage.includes('social media') || lowerMessage.includes('facebook') || lowerMessage.includes('twitter') || lowerMessage.includes('instagram')) {
-      return `Social media content requires extra scrutiny! Here's my guidance:
-
-📱 **Social Media Fact-Checking**:
-• Check if the account is verified
-• Look for original sources of shared content
-• Be wary of emotional or divisive posts
-• Check comments for additional context or corrections
-
-⚠️ **Common Issues**:
-• Misleading captions on real images
-• Old content presented as current
-• Satirical content taken seriously
-• Echo chambers amplifying false information
-
-🔍 **Verification Tools**:
-• Reverse image search for photos
-• Check platform's fact-checking labels
-• Look for community notes or corrections
-• Verify through independent fact-checkers
-
-What specific social media content would you like me to help verify?`;
+      let response = `📱 **Social Media Content Fact-Check**\n\n`;
+      
+      // Specific social media misinformation patterns
+      if (lowerMessage.includes('5g') && (lowerMessage.includes('covid') || lowerMessage.includes('virus'))) {
+        response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
+        response += `**Why This is Wrong:**\n5G technology does not cause or spread COVID-19. Viruses cannot spread through radio waves.\n\n`;
+        response += `**Correct Information:**\nCOVID-19 is caused by the SARS-CoV-2 virus and spreads through respiratory droplets.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters\n2. https://www.fcc.gov/consumers/guides/5g-mobile-wireless-technology\n\n`;
+      } else if (lowerMessage.includes('flat earth')) {
+        response += `❌ **FACT-CHECK RATING**: FALSE\n\n`;
+        response += `**Why This is Wrong:**\nThe Earth is not flat. Multiple lines of evidence including satellite imagery and physics confirm Earth is a sphere.\n\n`;
+        response += `**Correct Information:**\nEarth is an oblate spheroid confirmed by satellite imagery, physics, and navigation systems.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.nasa.gov/audience/forstudents/k-4/stories/nasa-knows/what-is-earth-k4.html\n2. https://earthobservatory.nasa.gov/\n\n`;
+      } else {
+        response += `❓ **FACT-CHECK RATING**: READY TO ANALYZE\n\n`;
+        response += `**Correct Information:**\nSocial media content should be verified through multiple independent sources.\n\n`;
+        response += `📚 **Reliable Sources & Citations:**\n1. https://www.snopes.com/\n2. https://www.factcheck.org/\n\n`;
+      }
+      
+      response += `🔍 **Social Media Verification**:\n• Check if account is verified\n• Look for original sources\n• Use reverse image search\n• Check platform fact-checking labels\n\nWhat specific social media content would you like me to help verify?`;
+      return response;
     }
     
-    // General response
-    return `I'm here to help you fact-check and verify information! I can assist with:
+    // General response with enhanced fact-checking
+    return `🤖 **MisinfoGuard Enhanced Fact-Checker**
 
-🔍 **Content Analysis**:
-• News articles and headlines
-• Social media posts and claims
-• Health and medical information
-• Potential scams and fraud detection
+❓ **FACT-CHECK RATING**: READY TO ANALYZE
 
-💡 **How I Help**:
-• Identify credibility indicators
-• Spot common misinformation patterns
-• Provide verification strategies
-• Suggest reliable sources
+🎯 **Enhanced Fact-Checking Features**:
+• ✅/❌ **True/False Ratings** for specific claims
+• **Detailed Explanations** of why information might be wrong
+• **Correct Facts** with proper context and citations
+• **Citation Links** to reliable, authoritative sources
 
-📝 **To get started**: Share the specific content, claim, or question you'd like me to analyze. The more context you provide, the better I can help!
+🔍 **Content Analysis Capabilities**:
+• News articles and headlines with source verification
+• Health and medical claims with scientific citations
+• Political information with official source links
+• Social media posts with misinformation detection
+• Conspiracy theories with evidence-based debunking
 
-You can also try asking:
-• "Is this news article credible?"
-• "Check this health claim"
-• "Is this a scam?"
-• "Verify this social media post"`;
+📚 **Reliable Fact-Check Sources I Reference**:
+1. https://www.snopes.com/
+2. https://www.factcheck.org/
+3. https://www.politifact.com/
+4. https://www.who.int/ (Health)
+5. https://www.cdc.gov/ (Health)
+6. https://climate.nasa.gov/ (Science)
+
+💡 **Try Enhanced Fact-Checking**:
+• "Fact-check: Vaccines cause autism"
+• "Is climate change a hoax?"
+• "Check this news article for accuracy"
+• "Verify this health claim"
+
+**Share any content for comprehensive fact-checking with citations!**`;
   }
 
   // Clear chat function
