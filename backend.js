@@ -757,16 +757,35 @@ class BackendService {
   }
 }
 
+// Initialize global backend service
+let backendService;
+
+// Initialize backend service when DOM is ready
+function initBackendService() {
+  try {
+    backendService = new BackendService();
+    
+    // Make it globally available
+    if (typeof window !== 'undefined') {
+      window.backendService = backendService;
+    }
+    
+    console.log('Backend service initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize backend service:', error);
+    return false;
+  }
+}
+
 // Export for use in frontend
 if (typeof window !== "undefined") {
   window.BackendService = BackendService;
   window.API_CONFIG = API_CONFIG;
+  window.initBackendService = initBackendService;
 } else if (typeof module !== "undefined") {
-  module.exports = { BackendService, API_CONFIG };
+  module.exports = { BackendService, API_CONFIG, initBackendService };
 }
-
-// Initialize global backend service
-const backendService = new BackendService();
 
 // Environment setup instructions
 console.log(`

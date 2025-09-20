@@ -2302,7 +2302,7 @@ class FactCheckChatbot {
 
     try {
       // Use backend service if available
-      if (typeof backendService !== 'undefined') {
+      if (typeof backendService !== 'undefined' && backendService !== null) {
         const analysis = await backendService.analyzeContent(message, 'text');
         const response = this.generateResponseFromAnalysis(analysis, message);
         
@@ -2505,11 +2505,12 @@ class APIStatusChecker {
     this.showCheckingState();
     
     try {
-      if (typeof backendService !== 'undefined') {
+      if (typeof backendService !== 'undefined' && backendService !== null) {
         const healthCheck = await backendService.healthCheck();
         this.updateServiceStatuses(healthCheck);
         this.lastCheck = new Date();
       } else {
+        console.warn('Backend service not available, showing fallback status');
         // Fallback when backend service is not available
         this.showFallbackStatus();
       }
@@ -2711,6 +2712,11 @@ function initVSCodeFeatures() {
   // Initialize API status checker
   apiStatusChecker = new APIStatusChecker();
   
+  // Initialize backend service
+  if (typeof initBackendService === 'function') {
+    initBackendService();
+  }
+  
   // Set dark theme by default for VS Code look
   document.documentElement.setAttribute('data-color-scheme', 'dark');
   updateThemeIcon('dark');
@@ -2745,7 +2751,7 @@ async function analyzeContentWithBackend(content, type) {
     let result;
     
     // Use backend service if available
-    if (typeof backendService !== 'undefined') {
+    if (typeof backendService !== 'undefined' && backendService !== null) {
       const analysis = await backendService.analyzeContent(content, type);
       result = convertBackendResult(analysis);
     } else {
