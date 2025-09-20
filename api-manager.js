@@ -191,10 +191,11 @@ class GeminiAPIService {
 
   async testConnection() {
     try {
-      const response = await fetch(`${this.baseUrl}/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`${this.baseUrl}/models/gemini-2.0-flash:generateContent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-goog-api-key': this.apiKey
         },
         body: JSON.stringify({
           contents: [{
@@ -218,10 +219,11 @@ class GeminiAPIService {
 
   async analyzeContent(content) {
     try {
-      const response = await fetch(`${this.baseUrl}/models/gemini-pro:generateContent?key=${this.apiKey}`, {
+      const response = await fetch(`${this.baseUrl}/models/gemini-2.0-flash:generateContent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-goog-api-key': this.apiKey
         },
         body: JSON.stringify({
           contents: [{

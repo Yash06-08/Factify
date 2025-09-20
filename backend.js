@@ -8,7 +8,7 @@ const API_CONFIG = {
     apiKey:
       process.env.GEMINI_API_KEY || "AIzaSyD5FEzRqDyZnuteVa8Y300DhjXJKq3bJ_w",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta",
-    model: "gemini-pro",
+    model: "gemini-2.0-flash",
     maxTokens: 2048,
     temperature: 0.3,
   },
