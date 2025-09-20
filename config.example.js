@@ -17,7 +17,11 @@ const API_KEYS = {
 
     // Hugging Face API Key
     // Get from: https://huggingface.co/settings/tokens
-    HUGGING_FACE_API_KEY: 'your_hugging_face_api_key_here'
+    HUGGING_FACE_API_KEY: 'your_hugging_face_api_key_here',
+
+    // WikiFactCheck API Key (Enhanced fact-checking service)
+    // Note: This is a simulated service for demonstration
+    WIKIFACTCHECK_API_KEY: 'your_wikifactcheck_api_key_here'
 };
 
 // Optional configuration

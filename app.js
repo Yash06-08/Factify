@@ -938,6 +938,23 @@ function initVerification() {
       if (ocrConfidence) {
         ocrConfidence.textContent = '';
       }
+      // Clear AI detection results
+      const aiDetectionResults = document.getElementById('aiDetectionResults');
+      const aiVerdict = document.getElementById('aiVerdict');
+      const aiConfidenceAI = document.getElementById('aiConfidence');
+      const aiIndicators = document.getElementById('aiIndicators');
+      if (aiDetectionResults) {
+        aiDetectionResults.classList.add('hidden');
+      }
+      if (aiVerdict) {
+        aiVerdict.textContent = '';
+      }
+      if (aiConfidenceAI) {
+        aiConfidenceAI.textContent = '';
+      }
+      if (aiIndicators) {
+        aiIndicators.innerHTML = '';
+      }
       // Clear any existing results
       const resultsSection = document.getElementById('resultsSection');
       if (resultsSection) {
@@ -1003,8 +1020,9 @@ function handleImageUpload(file) {
         fileUploadArea.classList.add('file-uploaded');
       }
       
-      // Perform OCR on the uploaded image
+      // Perform OCR and AI detection on the uploaded image
       performOCR(file);
+      performAIDetection(file);
     };
     reader.readAsDataURL(file);
   }
@@ -1048,6 +1066,77 @@ async function performOCR(file) {
     ocrText.value = '';
     ocrConfidence.textContent = 'OCR failed';
     ocrText.placeholder = 'Failed to extract text. Please try again.';
+  }
+}
+
+// Perform AI detection on uploaded image
+async function performAIDetection(file) {
+  const aiDetectionResults = document.getElementById('aiDetectionResults');
+  const aiVerdict = document.getElementById('aiVerdict');
+  const aiConfidence = document.getElementById('aiConfidence');
+  const aiIndicators = document.getElementById('aiIndicators');
+  
+  if (!aiDetectionResults || !aiVerdict || !aiConfidence || !aiIndicators) return;
+  
+  // Show AI detection section with loading state
+  aiDetectionResults.classList.remove('hidden');
+  aiVerdict.textContent = 'Analyzing image for AI generation...';
+  aiConfidence.textContent = 'Processing...';
+  aiIndicators.innerHTML = '';
+  
+  try {
+    // Use API Manager's SightEngine service if available
+    if (typeof apiManager !== 'undefined' && apiManager !== null && apiManager.isConfigured('sightEngine')) {
+      const imageUrl = URL.createObjectURL(file);
+      const result = await apiManager.services.sightEngine.analyzeImage(imageUrl);
+      URL.revokeObjectURL(imageUrl);
+      
+      if (result.success && result.aiGenerated) {
+        const aiData = result.aiGenerated;
+        
+        // Update confidence
+        aiConfidence.textContent = `Confidence: ${Math.round(aiData.confidence * 100)}%`;
+        
+        // Update verdict
+        if (aiData.isAI) {
+          aiVerdict.textContent = '🤖 Likely AI-Generated';
+          aiVerdict.className = 'ai-verdict likely-ai';
+        } else {
+          aiVerdict.textContent = '📷 Likely Real Image';
+          aiVerdict.className = 'ai-verdict likely-real';
+        }
+        
+        // Update indicators
+        if (aiData.indicators.length > 0) {
+          aiIndicators.innerHTML = `
+            <strong>Detection Indicators:</strong>
+            <ul>
+              ${aiData.indicators.map(indicator => `<li>${indicator}</li>`).join('')}
+            </ul>
+            <p><em>Method: ${aiData.method}</em></p>
+          `;
+        } else {
+          aiIndicators.innerHTML = '<p>No specific AI generation indicators detected.</p>';
+        }
+      } else {
+        aiVerdict.textContent = '❓ Unable to determine';
+        aiVerdict.className = 'ai-verdict uncertain';
+        aiConfidence.textContent = 'Analysis incomplete';
+        aiIndicators.innerHTML = '<p>Could not analyze image for AI generation.</p>';
+      }
+    } else {
+      // Fallback: Show message about AI detection service
+      aiVerdict.textContent = '⚙️ Service not configured';
+      aiVerdict.className = 'ai-verdict uncertain';
+      aiConfidence.textContent = 'N/A';
+      aiIndicators.innerHTML = '<p>AI detection service not available. Please configure SightEngine API key in config.js</p>';
+    }
+  } catch (error) {
+    console.error('AI detection failed:', error);
+    aiVerdict.textContent = '❌ Detection failed';
+    aiVerdict.className = 'ai-verdict uncertain';
+    aiConfidence.textContent = 'Error';
+    aiIndicators.innerHTML = '<p>Failed to analyze image for AI generation. Please try again.</p>';
   }
 }
 
@@ -2478,54 +2567,82 @@ class FactCheckChatbot {
     const factCheck = analysis.analysis?.factCheck || {};
     const sentiment = analysis.analysis?.sentiment || {};
     const classification = analysis.analysis?.classification || {};
+    const wikiFactCheck = analysis.analysis?.wikiFactCheck || {};
+    const finalVerdict = analysis.finalVerdict || {};
     
-    let response = `**Analysis Results:**\n\n`;
+    let response = `**Comprehensive Fact-Check Analysis:**\n\n`;
     
-    // Credibility with verdict and explanation
-    if (factCheck.credibilityScore) {
-      const score = factCheck.credibilityScore;
-      const verdict = score > 70 ? '✅ Likely Reliable' : score > 40 ? '⚠️ Questionable' : '❌ Likely Unreliable';
-      response += `🎯 **Verdict**: ${verdict} (${score}/100)\n`;
+    // Final Verdict (most important)
+    if (finalVerdict.verdict) {
+      const verdictEmoji = {
+        'LIKELY_RELIABLE': '✅',
+        'MIXED_SIGNALS': '⚠️',
+        'QUESTIONABLE': '❌',
+        'HIGHLY_UNRELIABLE': '🚫'
+      };
       
-      if (score > 70) {
-        response += `This content appears credible based on AI analysis.\n`;
-      } else if (score > 40) {
-        response += `This content has mixed signals - proceed with caution.\n`;
-      } else {
-        response += `This content shows multiple red flags for reliability.\n`;
+      response += `🎯 **FINAL VERDICT**: ${verdictEmoji[finalVerdict.verdict] || '❓'} ${finalVerdict.verdict.replace(/_/g, ' ')}\n`;
+      response += `**Overall Score**: ${finalVerdict.score}/100 (${finalVerdict.confidence}% confidence)\n\n`;
+    }
+    
+    // Analysis breakdown
+    response += `📊 **Analysis Breakdown:**\n`;
+    
+    if (factCheck.credibilityScore) {
+      response += `• AI Analysis: ${factCheck.credibilityScore}/100\n`;
+    }
+    
+    if (wikiFactCheck.credibilityScore) {
+      response += `• Fact-Check Score: ${wikiFactCheck.credibilityScore}/100\n`;
+      if (wikiFactCheck.categories && wikiFactCheck.categories.length > 0) {
+        response += `• Categories: ${wikiFactCheck.categories.join(', ')}\n`;
       }
     }
     
-    // Sentiment with context
     if (sentiment.sentiment) {
       const emoji = sentiment.sentiment === 'POSITIVE' ? '😊' : sentiment.sentiment === 'NEGATIVE' ? '😟' : '😐';
-      const confidence = Math.round(sentiment.confidence * 100);
-      response += `${emoji} **Tone**: ${sentiment.sentiment} (${confidence}% confidence)\n`;
+      response += `• ${emoji} Tone: ${sentiment.sentiment}\n`;
     }
     
-    // Classification with explanation
     if (classification.classification) {
       const emoji = classification.classification === 'factual' ? '📊' : classification.classification === 'opinion' ? '💭' : '⚠️';
-      const confidence = Math.round(classification.confidence * 100);
-      response += `${emoji} **Type**: ${classification.classification.toUpperCase()} content (${confidence}% confidence)\n\n`;
+      response += `• ${emoji} Type: ${classification.classification.toUpperCase()}\n`;
     }
     
-    // AI analysis summary
-    if (factCheck.analysis) {
-      response += `🔍 **AI Analysis**: ${factCheck.analysis}\n\n`;
+    // Red flags if any
+    if (wikiFactCheck.redFlags && wikiFactCheck.redFlags.length > 0) {
+      response += `\n🚩 **Red Flags Detected:**\n`;
+      wikiFactCheck.redFlags.forEach(flag => {
+        response += `• ${flag}\n`;
+      });
     }
     
-    // Enhanced recommendations
-    response += `💡 **Recommendations:**\n`;
-    if (classification.classification === 'misleading') {
-      response += `• ⚠️ HIGH CAUTION - Content flagged as potentially misleading\n`;
+    // Reasoning
+    if (finalVerdict.reasoning && finalVerdict.reasoning.length > 0) {
+      response += `\n🔍 **Key Findings:**\n`;
+      finalVerdict.reasoning.forEach(reason => {
+        response += `• ${reason}\n`;
+      });
     }
-    response += `• Cross-reference with 2-3 reliable, independent sources\n`;
-    response += `• Check the original source's credibility and bias\n`;
-    response += `• Verify publication date and author credentials\n`;
     
-    if (sentiment.sentiment === 'NEGATIVE') {
-      response += `• 🧠 Consider emotional language that may influence judgment\n`;
+    // Detailed explanation based on verdict
+    response += `\n📝 **Detailed Assessment:**\n`;
+    if (finalVerdict.verdict === 'LIKELY_RELIABLE') {
+      response += `This content demonstrates strong credibility indicators across multiple analysis methods. The information appears to be well-sourced and factually sound, though independent verification is always recommended.\n`;
+    } else if (finalVerdict.verdict === 'MIXED_SIGNALS') {
+      response += `This content shows conflicting reliability indicators. While some aspects appear credible, other factors raise concerns. Exercise caution and seek additional verification from authoritative sources.\n`;
+    } else if (finalVerdict.verdict === 'QUESTIONABLE') {
+      response += `This content exhibits several concerning patterns that suggest potential misinformation or bias. The claims should be thoroughly verified through official channels before accepting as factual.\n`;
+    } else if (finalVerdict.verdict === 'HIGHLY_UNRELIABLE') {
+      response += `This content shows strong indicators of misinformation, disinformation, or unreliable sourcing. Exercise extreme caution and do not share without thorough fact-checking from authoritative sources.\n`;
+    }
+    
+    // Recommendations
+    if (finalVerdict.recommendations && finalVerdict.recommendations.length > 0) {
+      response += `\n💡 **Recommended Actions:**\n`;
+      finalVerdict.recommendations.forEach(rec => {
+        response += `• ${rec}\n`;
+      });
     }
     
     return response;

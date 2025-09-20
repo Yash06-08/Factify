@@ -61,7 +61,7 @@
                             <span>Start Verification</span>
                             <span class="btn-icon" aria-hidden="true">⚡</span>
                         </button>
-                        <div id="verify-description" class="sr-only">Navigate to content verification tools</div>
+                       <div id="verify-description" class="sr-only">Navigate to content verification tools</div>
                         <button class="btn btn--lg btn--outline" id="learnMoreBtn" aria-describedby="learn-description">
                             <span>Explore Learning Center</span>
                             <span class="btn-icon" aria-hidden="true">📚</span>
@@ -184,6 +184,18 @@
                                         <button class="btn btn--sm btn--outline" id="copyOcrText">Copy Text</button>
                                         <button class="btn btn--sm btn--primary" id="analyzeOcrText">Analyze Extracted Text</button>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <!-- AI Detection Results Section -->
+                            <div id="aiDetectionResults" class="ai-detection-results hidden">
+                                <div class="ai-detection-header">
+                                    <h4>🤖 AI Generation Analysis</h4>
+                                    <span class="ai-confidence" id="aiConfidence"></span>
+                                </div>
+                                <div class="ai-detection-content">
+                                    <div class="ai-verdict" id="aiVerdict"></div>
+                                    <div class="ai-indicators" id="aiIndicators"></div>
                                 </div>
                             </div>
                             

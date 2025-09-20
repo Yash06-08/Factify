@@ -3778,6 +3778,109 @@ section { scroll-margin-top: var(--header-height, 72px); }
   }
 }
 
+/* AI Detection Results Section */
+.ai-detection-results {
+  margin-top: var(--space-16);
+  padding: var(--space-16);
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-base);
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.ai-detection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-12);
+  padding-bottom: var(--space-8);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ai-detection-header h4 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ai-confidence {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.ai-detection-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.ai-verdict {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-base);
+  border: 1px solid var(--color-border);
+}
+
+.ai-verdict.likely-ai {
+  background: rgba(var(--color-error-rgb), 0.1);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.ai-verdict.likely-real {
+  background: rgba(var(--color-success-rgb), 0.1);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.ai-verdict.uncertain {
+  background: rgba(var(--color-warning-rgb), 0.1);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.ai-indicators {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.ai-indicators ul {
+  margin: var(--space-4) 0 0 var(--space-16);
+  padding: 0;
+}
+
+.ai-indicators li {
+  margin-bottom: var(--space-2);
+}
+
+/* Dark theme adjustments for AI detection */
+[data-color-scheme="dark"] .ai-detection-results {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-color-scheme="dark"] .ai-confidence {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Responsive AI detection section */
+@media (max-width: 768px) {
+  .ai-detection-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-8);
+  }
+}
+
 /* Enhanced Article Cards */
 .article-card {
   background: var(--color-surface);
