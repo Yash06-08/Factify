@@ -22,29 +22,25 @@
     <header class="header" role="banner">
         <div class="container">
             <div class="header__content">
-                <div class="header__logo">
-                    <h1 class="logo__title">Factify</h1>
-                </div>
                 <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle mobile menu" aria-expanded="false">
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
                     <span class="hamburger-line"></span>
                 </button>
+                <div class="header__logo">
+                    <h1 class="logo__title">Factify</h1>
+                </div>
                 <nav class="header__nav" role="navigation" aria-label="Main navigation">
-                    <a href="#home" class="nav__link active" aria-current="page">Home</a>
-                    <a href="#verify" class="nav__link">Verify Content</a>
-                    <a href="#news" class="nav__link">News Centre</a>
-                    <a href="#bot" class="nav__link">Mobile Bot</a>
+                    <a href="#home" class="nav__link active" aria-current="page" data-translate="nav-home">Home</a>
+                    <a href="#verify" class="nav__link" data-translate="nav-verify">Verify Content</a>
+                    <a href="#news" class="nav__link" data-translate="nav-news">News Centre</a>
+                    <a href="#bot" class="nav__link" data-translate="nav-bot">Mobile Bot</a>
                 </nav>
                 <div class="header__actions">
                     <button class="btn btn--sm btn--outline theme-toggle" id="themeToggle" title="Toggle dark/light theme" aria-label="Toggle between dark and light theme">
                         <span class="theme-icon" aria-hidden="true">🌙</span>
                     </button>
                     <button class="btn btn--sm btn--outline language-toggle" id="languageToggle" aria-label="Switch language between English and Hindi">EN / हिं</button>
-                    <button class="btn btn--sm btn--primary" id="getStartedBtn" aria-label="Get started with content verification">
-                        <span>Get Started</span>
-                        <span class="btn-icon" aria-hidden="true">→</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -200,6 +196,39 @@
                     </div>
                 </div>
 
+                <!-- Educational Advisory -->
+                <div class="educational-advisory" id="educationalAdvisory">
+                    <div class="advisory-header">
+                        <div class="advisory-icon">📚</div>
+                        <h4 data-translate="advisory-title">Important: Understanding AI Analysis</h4>
+                    </div>
+                    <div class="advisory-content">
+                        <p data-translate="advisory-content">
+                            <strong>Please note:</strong> AI analysis results are tools to assist your judgment, not definitive truth. 
+                            Always cross-reference with multiple reliable sources, consider context, and use critical thinking. 
+                            Misinformation detection is complex, and no AI system is 100% accurate. 
+                            When in doubt, consult fact-checking organizations and trusted news sources.
+                        </p>
+                        <div class="advisory-tips">
+                            <div class="tip-item">
+                                <span class="tip-icon">✓</span>
+                                <span data-translate="tip-1">Verify with multiple sources</span>
+                            </div>
+                            <div class="tip-item">
+                                <span class="tip-icon">✓</span>
+                                <span data-translate="tip-2">Check publication date and context</span>
+                            </div>
+                            <div class="tip-item">
+                                <span class="tip-icon">✓</span>
+                                <span data-translate="tip-3">Consider the source's credibility</span>
+                            </div>
+                            <div class="tip-item">
+                                <span class="tip-icon">✓</span>
+                                <span data-translate="tip-4">Look for expert opinions and official statements</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- AI Fact-Check Chatbot -->
                 <div class="chatbot-container" id="chatbotContainer">

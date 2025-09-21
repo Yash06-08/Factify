@@ -440,15 +440,35 @@ const appData = {
       heroTitle: "Verify content. Build trust. Stay informed.",
       heroSubtitle: "Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels.",
       verifyContent: "Verify Content",
-      learnMore: "Explore Learning Center"
+      learnMore: "Explore Learning Center",
+      "advisory-title": "Important: Understanding AI Analysis",
+      "advisory-content": "<strong>Please note:</strong> AI analysis results are tools to assist your judgment, not definitive truth. Always cross-reference with multiple reliable sources, consider context, and use critical thinking. Misinformation detection is complex, and no AI system is 100% accurate. When in doubt, consult fact-checking organizations and trusted news sources.",
+      "tip-1": "Verify with multiple sources",
+      "tip-2": "Check publication date and context",
+      "tip-3": "Consider the source's credibility",
+      "tip-4": "Look for expert opinions and official statements",
+      "nav-home": "Home",
+      "nav-verify": "Verify Content",
+      "nav-news": "News Centre",
+      "nav-bot": "Mobile Bot"
     },
     hi: {
-      title: "मिसइन्फोगार्ड",
+      title: "फैक्टिफाई",
       tagline: "पेशेवर गलत सूचना का पता लगाना और डिजिटल साक्षरता",
       heroTitle: "सामग्री सत्यापित करें। विश्वास बनाएं। जानकार रहें।",
       heroSubtitle: "डिजिटल चैनलों में गलत सूचना, घोटाले और झूठी जानकारी का पता लगाने के लिए उन्नत AI-संचालित प्लेटफॉर्म।",
       verifyContent: "सामग्री सत्यापित करें",
-      learnMore: "शिक्षण केंद्र देखें"
+      learnMore: "शिक्षण केंद्र देखें",
+      "advisory-title": "महत्वपूर्ण: AI विश्लेषण को समझना",
+      "advisory-content": "<strong>कृपया ध्यान दें:</strong> AI विश्लेषण परिणाम आपके निर्णय में सहायता के लिए उपकरण हैं, निश्चित सत्य नहीं। हमेशा कई विश्वसनीय स्रोतों से क्रॉस-रेफरेंस करें, संदर्भ पर विचार करें, और आलोचनात्मक सोच का उपयोग करें। गलत सूचना का पता लगाना जटिल है, और कोई भी AI सिस्टम 100% सटीक नहीं है। संदेह की स्थिति में, तथ्य-जांच संगठनों और विश्वसनीय समाचार स्रोतों से सलाह लें।",
+      "tip-1": "कई स्रोतों से सत्यापित करें",
+      "tip-2": "प्रकाशन तिथि और संदर्भ जांचें",
+      "tip-3": "स्रोत की विश्वसनीयता पर विचार करें",
+      "tip-4": "विशेषज्ञ राय और आधिकारिक बयान देखें",
+      "nav-home": "होम",
+      "nav-verify": "सामग्री सत्यापित करें",
+      "nav-news": "समाचार केंद्र",
+      "nav-bot": "मोबाइल बॉट"
     }
   }
 };
@@ -2000,13 +2020,29 @@ function updateLanguage() {
     languageToggle.textContent = appState.currentLanguage === 'en' ? 'EN / हिं' : 'हिं / EN';
   }
   
-  // Update translatable elements (basic implementation)
+  // Update translatable elements
   document.querySelectorAll('[data-translate]').forEach(element => {
     const key = element.getAttribute('data-translate');
     if (currentLang[key]) {
-      element.textContent = currentLang[key];
+      // Check if the content contains HTML tags
+      if (currentLang[key].includes('<')) {
+        element.innerHTML = currentLang[key];
+      } else {
+        element.textContent = currentLang[key];
+      }
     }
   });
+  
+  // Update page title
+  if (currentLang.title) {
+    document.title = `${currentLang.title} - Professional misinformation detection and digital literacy`;
+  }
+  
+  // Update logo title
+  const logoTitle = document.querySelector('.logo__title');
+  if (logoTitle && currentLang.title) {
+    logoTitle.textContent = currentLang.title;
+  }
 }
 
 // Accessibility and Keyboard Navigation
