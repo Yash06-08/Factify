@@ -54,19 +54,19 @@
             <div class="hero">
                 <div class="hero__content">
                     <div class="hero__badge">
-                        <span class="badge badge--new" aria-label="New feature">New</span>
-                        <span>AI-Powered Misinformation Detection</span>
+                        <span class="badge badge--new" aria-label="New feature" data-translate="hero-badge-new">New</span>
+                        <span data-translate="hero-badge-text">AI-Powered Misinformation Detection</span>
                     </div>
-                    <h1 id="hero-title" class="hero__title">Verify content. Build trust. Stay informed.</h1>
-                    <p class="hero__subtitle">Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels with 99.8% accuracy.</p>
+                    <h1 id="hero-title" class="hero__title" data-translate="heroTitle">Verify content. Build trust. Stay informed.</h1>
+                    <p class="hero__subtitle" data-translate="heroSubtitle">Advanced AI-powered platform for detecting misinformation, scams, and false information across digital channels with 99.8% accuracy.</p>
                     <div class="hero__actions">
                         <button class="btn btn--lg btn--primary" id="verifyContentBtn" aria-describedby="verify-description">
-                            <span>Start Verification</span>
+                            <span data-translate="hero-btn-verify">Start Verification</span>
                             <span class="btn-icon" aria-hidden="true">⚡</span>
                         </button>
                        <div id="verify-description" class="sr-only">Navigate to content verification tools</div>
                         <button class="btn btn--lg btn--outline" id="learnMoreBtn" aria-describedby="learn-description">
-                            <span>Explore Learning Center</span>
+                            <span data-translate="hero-btn-learn">Explore Learning Center</span>
                             <span class="btn-icon" aria-hidden="true">📚</span>
                         </button>
                         <div id="learn-description" class="sr-only">Browse educational resources about digital literacy</div>
@@ -80,47 +80,47 @@
     <section id="home-stats" class="stats-section">
         <div class="container">
             <div class="stats-header">
-                <h2>Real-Time Impact</h2>
-                <p>Live statistics from our global misinformation detection network</p>
+                <h2 data-translate="stats-title">Real-Time Impact</h2>
+                <p data-translate="stats-subtitle">Live statistics from our global misinformation detection network</p>
             </div>
             <div class="stats-grid">
                 <div class="stat-card" data-stat="verifications">
                     <div class="stat-card__icon">🔍</div>
                     <div class="stat-card__number" data-target="2300000">0</div>
-                    <div class="stat-card__label">Total Verifications</div>
-                    <div class="stat-card__trend">+12% this week</div>
+                    <div class="stat-card__label" data-translate="stat-verifications">Total Verifications</div>
+                    <div class="stat-card__trend">+12% <span data-translate="stat-trend-week">this week</span></div>
                     <div class="stat-card__chart" id="verificationsChart"></div>
                 </div>
                 <div class="stat-card" data-stat="scams">
                     <div class="stat-card__icon">🛡️</div>
                     <div class="stat-card__number" data-target="156000">0</div>
-                    <div class="stat-card__label">Scams Detected</div>
-                    <div class="stat-card__trend">+8% this week</div>
+                    <div class="stat-card__label" data-translate="stat-scams">Scams Detected</div>
+                    <div class="stat-card__trend">+8% <span data-translate="stat-trend-week">this week</span></div>
                     <div class="stat-card__chart" id="scamsChart"></div>
                 </div>
                 <div class="stat-card" data-stat="users">
                     <div class="stat-card__icon">👥</div>
                     <div class="stat-card__number" data-target="890000">0</div>
-                    <div class="stat-card__label">Users Educated</div>
-                    <div class="stat-card__trend">+15% this week</div>
+                    <div class="stat-card__label" data-translate="stat-users">Users Educated</div>
+                    <div class="stat-card__trend">+15% <span data-translate="stat-trend-week">this week</span></div>
                     <div class="stat-card__chart" id="usersChart"></div>
                 </div>
                 <div class="stat-card" data-stat="accuracy">
                     <div class="stat-card__icon">🎯</div>
                     <div class="stat-card__number" data-target="99.8">0</div>
                     <div class="stat-card__suffix">%</div>
-                    <div class="stat-card__label">Accuracy Rate</div>
-                    <div class="stat-card__trend">+0.2% this month</div>
+                    <div class="stat-card__label" data-translate="stat-accuracy">Accuracy Rate</div>
+                    <div class="stat-card__trend">+0.2% <span data-translate="stat-trend-month">this month</span></div>
                     <div class="stat-card__chart" id="accuracyChart"></div>
                 </div>
             </div>
             <div class="live-feed">
-                <h3>Live Verification Feed</h3>
+                <h3 data-translate="live-feed-title">Live Verification Feed</h3>
                 <div class="feed-container" id="liveFeed">
                     <div class="feed-item">
                         <span class="feed-status verified">✓</span>
-                        <span class="feed-text">Health claim verified from WHO source</span>
-                        <span class="feed-time">2s ago</span>
+                        <span class="feed-text" data-translate="feed-sample">Health claim verified from WHO source</span>
+                        <span class="feed-time" data-translate="feed-time">2s ago</span>
                     </div>
                 </div>
             </div>
@@ -131,8 +131,8 @@
         <section id="verify" class="verification-section section hidden">
             <div class="container">
                 <div class="section-header">
-                    <h2>Image Verification</h2>
-                    <p>Upload an image to check for misinformation, AI generation, and extract text</p>
+                    <h2 data-translate="verify-title">Image Verification</h2>
+                    <p data-translate="verify-subtitle">Upload an image to check for misinformation, AI generation, and extract text</p>
                 </div>
                 
                 <div class="tab-content-wrapper">
@@ -142,24 +142,24 @@
                             <input type="file" id="imageInput" accept="image/*" class="file-input" />
                             <div class="file-upload" id="fileUploadArea">
                                 <div class="file-upload__icon">📷</div>
-                                <div class="file-upload__text">
+                                <div class="file-upload__text" data-translate="upload-text">
                                     <strong>Click to upload</strong> or drag and drop your image here
                                 </div>
-                                <div class="file-upload__hint">PNG, JPG, JPEG up to 10MB</div>
+                                <div class="file-upload__hint" data-translate="upload-hint">PNG, JPG, JPEG up to 10MB</div>
                             </div>
                             <div id="imagePreview" class="image-preview hidden"></div>
                             
                             <!-- OCR Results Section -->
                             <div id="ocrResults" class="ocr-results hidden">
                                 <div class="ocr-header">
-                                    <h4>📝 Extracted Text (OCR)</h4>
+                                    <h4 data-translate="ocr-title">📝 Extracted Text (OCR)</h4>
                                     <span class="ocr-confidence" id="ocrConfidence"></span>
                                 </div>
                                 <div class="ocr-content">
-                                    <textarea id="ocrText" class="ocr-text" readonly placeholder="No text detected in image..."></textarea>
+                                    <textarea id="ocrText" class="ocr-text" readonly data-translate-placeholder="ocr-placeholder" placeholder="No text detected in image..."></textarea>
                                     <div class="ocr-actions">
-                                        <button class="btn btn--sm btn--outline" id="copyOcrText">Copy Text</button>
-                                        <button class="btn btn--sm btn--primary" id="analyzeOcrText">Analyze Extracted Text</button>
+                                        <button class="btn btn--sm btn--outline" id="copyOcrText" data-translate="btn-copy-text">Copy Text</button>
+                                        <button class="btn btn--sm btn--primary" id="analyzeOcrText" data-translate="btn-analyze-text">Analyze Extracted Text</button>
                                     </div>
                                 </div>
                             </div>
@@ -167,7 +167,7 @@
                             <!-- AI Detection Results Section -->
                             <div id="aiDetectionResults" class="ai-detection-results hidden">
                                 <div class="ai-detection-header">
-                                    <h4>🤖 AI Generation Analysis</h4>
+                                    <h4 data-translate="ai-detection-title">🤖 AI Generation Analysis</h4>
                                     <span class="ai-confidence" id="aiConfidence"></span>
                                 </div>
                                 <div class="ai-detection-content">
@@ -177,10 +177,10 @@
                             </div>
                             
                             <div class="input-actions">
-                                <button class="btn btn--primary analyze-btn" id="analyzeImage" data-translate="analyzeNow">
+                                <button class="btn btn--primary analyze-btn" id="analyzeImage" data-translate="btn-analyze">
                                     Analyze Now
                                 </button>
-                                <button class="btn btn--outline clear-btn" id="clearImage">
+                                <button class="btn btn--outline clear-btn" id="clearImage" data-translate="btn-clear">
                                     Clear
                                 </button>
                             </div>
@@ -191,7 +191,7 @@
                 <div id="processingState" class="processing-state hidden">
                     <div class="processing-card">
                         <div class="processing-indicator"></div>
-                        <h3>Analyzing Content...</h3>
+                        <h3 data-translate="processing-title">Analyzing Content...</h3>
                         <div class="progress-bar">
                             <div class="progress-fill" id="progressFill"></div>
                         </div>
@@ -237,40 +237,41 @@
                     <div class="chatbot-header">
                         <div class="chatbot-avatar">🤖</div>
                         <div>
-                            <h3 class="chatbot-title">AI Fact-Check Assistant</h3>
+                            <h3 class="chatbot-title" data-translate="chatbot-title">AI Fact-Check Assistant</h3>
                             <div class="chatbot-status">
                                 <div class="status-indicator"></div>
-                                Online
+                                <span data-translate="chatbot-status">Online</span>
                             </div>
                         </div>
                     </div>
                     
                     <div class="chat-messages" id="chatMessages">
                         <div class="message">
-                            <div class="message-bubble">
+                            <div class="message-bubble" data-translate="chatbot-intro">
                                 Hi! I'm your AI fact-checking assistant. I can help you verify information, check sources, and provide detailed analysis. What would you like to fact-check today?
                             </div>
                         </div>
                     </div>
                     
                     <div class="suggested-questions">
-                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this news article credible?')">Is this news article credible?</div>
-                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Check this health claim')">Check this health claim</div>
-                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Verify this social media post')">Verify this social media post</div>
-                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this a scam?')">Is this a scam?</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this news article credible?')" data-translate="suggest-1">Is this news article credible?</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Check this health claim')" data-translate="suggest-2">Check this health claim</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Verify this social media post')" data-translate="suggest-3">Verify this social media post</div>
+                        <div class="suggestion-chip" onclick="sendSuggestedQuestion('Is this a scam?')" data-translate="suggest-4">Is this a scam?</div>
                     </div>
                     
                     <div class="chat-input-container">
                         <textarea 
                             class="chat-input" 
                             id="chatInput" 
+                            data-translate-placeholder="chat-placeholder"
                             placeholder="Ask me to fact-check anything..."
                             rows="1"
                         ></textarea>
-                        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
+                        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" data-translate="btn-send">
                             Send
                         </button>
-                        <button class="chat-clear-btn" id="chatClearBtn" onclick="clearChat()">
+                        <button class="chat-clear-btn" id="chatClearBtn" onclick="clearChat()" data-translate="btn-clear-chat">
                             Clear
                         </button>
                     </div>

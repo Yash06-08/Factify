@@ -450,7 +450,68 @@ const appData = {
       "nav-home": "Home",
       "nav-verify": "Verify Content",
       "nav-news": "News Centre",
-      "nav-bot": "Mobile Bot"
+      "nav-bot": "Mobile Bot",
+      // Hero section
+      "hero-badge-new": "New",
+      "hero-badge-text": "AI-Powered Misinformation Detection",
+      "hero-btn-verify": "Start Verification",
+      "hero-btn-learn": "Explore Learning Center",
+      // Stats section
+      "stats-title": "Real-Time Impact",
+      "stats-subtitle": "Live statistics from our global misinformation detection network",
+      "stat-verifications": "Total Verifications",
+      "stat-scams": "Scams Detected",
+      "stat-users": "Users Educated",
+      "stat-accuracy": "Accuracy Rate",
+      "stat-trend-week": "this week",
+      "stat-trend-month": "this month",
+      "live-feed-title": "Live Verification Feed",
+      "feed-sample": "Health claim verified from WHO source",
+      "feed-time": "2s ago",
+      // Verification section
+      "verify-title": "Image Verification",
+      "verify-subtitle": "Upload an image to check for misinformation, AI generation, and extract text",
+      "upload-text": "<strong>Click to upload</strong> or drag and drop your image here",
+      "upload-hint": "PNG, JPG, JPEG up to 10MB",
+      "processing-title": "Analyzing Content...",
+      "btn-analyze": "Analyze Now",
+      "btn-clear": "Clear",
+      // OCR Results
+      "ocr-title": "📝 Extracted Text (OCR)",
+      "ocr-placeholder": "No text detected in image...",
+      "btn-copy-text": "Copy Text",
+      "btn-analyze-text": "Analyze Extracted Text",
+      // AI Detection
+      "ai-detection-title": "🤖 AI Generation Analysis",
+      // Chatbot
+      "chatbot-title": "AI Fact-Check Assistant",
+      "chatbot-status": "Online",
+      "chatbot-intro": "Hi! I'm your AI fact-checking assistant. I can help you verify information, check sources, and provide detailed analysis. What would you like to fact-check today?",
+      "chat-placeholder": "Ask me to fact-check anything...",
+      "btn-send": "Send",
+      "btn-clear-chat": "Clear",
+      // Suggestions
+      "suggest-1": "Is this news article credible?",
+      "suggest-2": "Check this health claim",
+      "suggest-3": "Verify this social media post",
+      "suggest-4": "Is this a scam?",
+      // API Status
+      "api-status-title": "🔧 API Services Status",
+      "api-status-subtitle": "Check if all backend services are working properly",
+      "btn-check-status": "Check Status",
+      "service-gemini": "Gemini AI",
+      "service-gemini-desc": "Advanced fact-checking and content analysis",
+      "service-huggingface": "Hugging Face",
+      "service-huggingface-desc": "Sentiment analysis and text classification",
+      "service-ocr": "OCR.space",
+      "service-ocr-desc": "Text extraction from images",
+      "service-sightengine": "SightEngine",
+      "service-sightengine-desc": "Content moderation and image analysis",
+      "status-checking": "Checking...",
+      "status-connected": "Connected",
+      "status-error": "Error",
+      "status-summary-title": "Overall Status",
+      "status-summary-text": "Click \"Check Status\" to test all services"
     },
     hi: {
       title: "फैक्टिफाई",
@@ -468,7 +529,68 @@ const appData = {
       "nav-home": "होम",
       "nav-verify": "सामग्री सत्यापित करें",
       "nav-news": "समाचार केंद्र",
-      "nav-bot": "मोबाइल बॉट"
+      "nav-bot": "मोबाइल बॉट",
+      // Hero section
+      "hero-badge-new": "नया",
+      "hero-badge-text": "AI-संचालित गलत सूचना का पता लगाना",
+      "hero-btn-verify": "सत्यापन शुरू करें",
+      "hero-btn-learn": "शिक्षण केंद्र देखें",
+      // Stats section
+      "stats-title": "वास्तविक समय प्रभाव",
+      "stats-subtitle": "हमारे वैश्विक गलत सूचना का पता लगाने के नेटवर्क से लाइव आंकड़े",
+      "stat-verifications": "कुल सत्यापन",
+      "stat-scams": "घोटाले का पता लगाया",
+      "stat-users": "शिक्षित उपयोगकर्ता",
+      "stat-accuracy": "सटीकता दर",
+      "stat-trend-week": "इस सप्ताह",
+      "stat-trend-month": "इस महीने",
+      "live-feed-title": "लाइव सत्यापन फीड",
+      "feed-sample": "WHO स्रोत से स्वास्थ्य दावा सत्यापित",
+      "feed-time": "2 सेकंड पहले",
+      // Verification section
+      "verify-title": "छवि सत्यापन",
+      "verify-subtitle": "गलत सूचना, AI जेनरेशन की जांच करने और टेक्स्ट निकालने के लिए एक छवि अपलोड करें",
+      "upload-text": "<strong>अपलोड करने के लिए क्लिक करें</strong> या अपनी छवि यहां खींचें और छोड़ें",
+      "upload-hint": "PNG, JPG, JPEG 10MB तक",
+      "processing-title": "सामग्री का विश्लेषण कर रहे हैं...",
+      "btn-analyze": "अभी विश्लेषण करें",
+      "btn-clear": "साफ़ करें",
+      // OCR Results
+      "ocr-title": "📝 निकाला गया टेक्स्ट (OCR)",
+      "ocr-placeholder": "छवि में कोई टेक्स्ट नहीं मिला...",
+      "btn-copy-text": "टेक्स्ट कॉपी करें",
+      "btn-analyze-text": "निकाले गए टेक्स्ट का विश्लेषण करें",
+      // AI Detection
+      "ai-detection-title": "🤖 AI जेनरेशन विश्लेषण",
+      // Chatbot
+      "chatbot-title": "AI तथ्य-जांच सहायक",
+      "chatbot-status": "ऑनलाइन",
+      "chatbot-intro": "नमस्ते! मैं आपका AI तथ्य-जांच सहायक हूं। मैं जानकारी सत्यापित करने, स्रोतों की जांच करने और विस्तृत विश्लेषण प्रदान करने में आपकी सहायता कर सकता हूं। आज आप क्या तथ्य-जांच करना चाहेंगे?",
+      "chat-placeholder": "मुझसे कुछ भी तथ्य-जांच करने के लिए कहें...",
+      "btn-send": "भेजें",
+      "btn-clear-chat": "साफ़ करें",
+      // Suggestions
+      "suggest-1": "क्या यह समाचार लेख विश्वसनीय है?",
+      "suggest-2": "इस स्वास्थ्य दावे की जांच करें",
+      "suggest-3": "इस सोशल मीडिया पोस्ट को सत्यापित करें",
+      "suggest-4": "क्या यह एक घोटाला है?",
+      // API Status
+      "api-status-title": "🔧 API सेवाओं की स्थिति",
+      "api-status-subtitle": "जांचें कि क्या सभी बैकएंड सेवाएं ठीक से काम कर रही हैं",
+      "btn-check-status": "स्थिति जांचें",
+      "service-gemini": "जेमिनी AI",
+      "service-gemini-desc": "उन्नत तथ्य-जांच और सामग्री विश्लेषण",
+      "service-huggingface": "हगिंग फेस",
+      "service-huggingface-desc": "भावना विश्लेषण और टेक्स्ट वर्गीकरण",
+      "service-ocr": "OCR.space",
+      "service-ocr-desc": "छवियों से टेक्स्ट निकालना",
+      "service-sightengine": "साइटइंजन",
+      "service-sightengine-desc": "सामग्री मॉडरेशन और छवि विश्लेषण",
+      "status-checking": "जांच रहे हैं...",
+      "status-connected": "जुड़ा हुआ",
+      "status-error": "त्रुटि",
+      "status-summary-title": "समग्र स्थिति",
+      "status-summary-text": "सभी सेवाओं का परीक्षण करने के लिए \"स्थिति जांचें\" पर क्लिक करें"
     }
   }
 };
@@ -2030,6 +2152,14 @@ function updateLanguage() {
       } else {
         element.textContent = currentLang[key];
       }
+    }
+  });
+  
+  // Update placeholder attributes
+  document.querySelectorAll('[data-translate-placeholder]').forEach(element => {
+    const key = element.getAttribute('data-translate-placeholder');
+    if (currentLang[key]) {
+      element.placeholder = currentLang[key];
     }
   });
   
