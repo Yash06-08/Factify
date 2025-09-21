@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Gemini Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Final Gemini API Test</h1>
+    
+    <div class="grid">
+        <div>
+            <div class="test-section">
+                <h2>1. API Configuration</h2>
+                <button onclick="testConfig()">Check Config</button>
+                <div id="configResult"></div>
+            </div>
+
+            <div class="test-section">
+                <h2>2. Gemini Connection</h2>
+                <button onclick="testConnection()">Test Connection</button>
+                <div id="connectionResult"></div>
+            </div>
+
+            <div class="test-section">
+                <h2>3. Text Analysis</h2>
+                <button onclick="testTextAnalysis()">Test Text Analysis</button>
+                <div id="textResult"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="test-section">
+                <h2>4. Image OCR (Direct)</h2>
+                <input type="file" id="imageInput1" accept="image/*">
+                <button onclick="testDirectOCR()">Test Direct OCR</button>
+                <div id="directOCRResult"></div>
+            </div>
+
+            <div class="test-section">
+                <h2>5. Image Analysis (Full Pipeline)</h2>
+                <input type="file" id="imageInput2" accept="image/*">
+                <button onclick="testFullPipeline()">Test Full Pipeline</button>
+                <div id="pipelineResult"></div>
+            </div>
+
+            <div class="test-section">
+                <h2>6. Create Test Image</h2>
+                <button onclick="createTestImage()">Create Test Image with Text</button>
+                <canvas id="testCanvas" width="400" height="200" style="border: 1px solid #ccc; display: none;"></canvas>
+                <div id="canvasResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <pre id="consoleOutput"></pre>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-manager.js"></script>
+    <script>
+        let logs = [];
+        let apiManager;
+
+        // Capture console output
+        ['log', 'error', 'warn', 'info'].forEach(method => {
+            const original = console[method];
+            console[method] = function(...args) {
+                logs.push(`[${new Date().toLocaleTimeString()}] ${method.toUpperCase()}: ${args.join(' ')}`);
+                updateConsole();
+                original.apply(console, args);
+            };
+        });
+
+        function updateConsole() {
+            document.getElementById('consoleOutput').textContent = logs.slice(-20).join('\\n');
+        }
+
+        async function testConfig() {
+            const resultDiv = document.getElementById('configResult');
+            try {
+                const hasConfig = typeof window.API_KEYS !== 'undefined';
+                const hasGeminiKey = hasConfig && window.API_KEYS.GEMINI_API_KEY;
+                const keyValid = hasGeminiKey && window.API_KEYS.GEMINI_API_KEY.startsWith('AIza') && window.API_KEYS.GEMINI_API_KEY.length === 39;
+                
+                resultDiv.innerHTML = `
+                    ✅ Config loaded: ${hasConfig}<br>
+                    ✅ Gemini key present: ${hasGeminiKey}<br>
+                    ✅ Key format valid: ${keyValid}<br>
+                    Key: ${hasGeminiKey ? window.API_KEYS.GEMINI_API_KEY.substring(0, 10) + '...' : 'None'}
+                `;
+                resultDiv.className = keyValid ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            resultDiv.innerHTML = 'Testing...';
+            resultDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) {
+                    apiManager = new APIManager();
+                }
+                
+                const result = await apiManager.services.gemini.testConnection();
+                resultDiv.innerHTML = `
+                    ${result.success ? '✅' : '❌'} Connection: ${result.success ? 'Success' : 'Failed'}<br>
+                    Message: ${result.message}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testTextAnalysis() {
+            const resultDiv = document.getElementById('textResult');
+            resultDiv.innerHTML = 'Analyzing...';
+            resultDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) apiManager = new APIManager();
+                
+                const testText = "The moon landing was faked by NASA in 1969.";
+                const result = await apiManager.services.gemini.analyzeContent(testText);
+                
+                resultDiv.innerHTML = `
+                    ${result.success ? '✅' : '❌'} Analysis: ${result.success ? 'Success' : 'Failed'}<br>
+                    Credibility Score: ${result.credibilityScore || 'N/A'}<br>
+                    Brief: ${result.briefExplanation ? result.briefExplanation.substring(0, 100) + '...' : 'N/A'}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testDirectOCR() {
+            const fileInput = document.getElementById('imageInput1');
+            const resultDiv = document.getElementById('directOCRResult');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '⚠️ Please select an image file first.';
+                resultDiv.className = 'test-section error';
+                return;
+            }
+
+            resultDiv.innerHTML = 'Extracting text...';
+            resultDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) apiManager = new APIManager();
+                
+                const file = fileInput.files[0];
+                const result = await apiManager.services.gemini.extractTextFromImage(file);
+                
+                resultDiv.innerHTML = `
+                    ${result.success ? '✅' : '❌'} OCR: ${result.success ? 'Success' : 'Failed'}<br>
+                    Has Text: ${result.hasText}<br>
+                    Confidence: ${result.confidence}<br>
+                    Text: "${result.text || 'None'}"<br>
+                    ${result.error ? `Error: ${result.error}` : ''}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testFullPipeline() {
+            const fileInput = document.getElementById('imageInput2');
+            const resultDiv = document.getElementById('pipelineResult');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '⚠️ Please select an image file first.';
+                resultDiv.className = 'test-section error';
+                return;
+            }
+
+            resultDiv.innerHTML = 'Running full analysis...';
+            resultDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) apiManager = new APIManager();
+                
+                const file = fileInput.files[0];
+                const result = await apiManager.analyzeContent('', 'image', file);
+                
+                const ocrResults = result.analysis.ocrResults;
+                const factCheck = result.analysis.ocrFactCheck;
+                
+                resultDiv.innerHTML = `
+                    ${result.success ? '✅' : '❌'} Pipeline: ${result.success ? 'Success' : 'Failed'}<br>
+                    OCR Success: ${ocrResults ? ocrResults.success : 'No'}<br>
+                    Text Found: ${ocrResults ? ocrResults.hasText : 'No'}<br>
+                    Extracted: "${ocrResults ? ocrResults.text : 'None'}"<br>
+                    Fact Check: ${factCheck ? 'Available' : 'None'}<br>
+                    ${factCheck ? `Score: ${factCheck.credibilityScore || 'N/A'}` : ''}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        function createTestImage() {
+            const canvas = document.getElementById('testCanvas');
+            const ctx = canvas.getContext('2d');
+            const resultDiv = document.getElementById('canvasResult');
+            
+            // Clear canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add text
+            ctx.fillStyle = 'black';
+            ctx.font = '24px Arial';
+            ctx.fillText('COVID-19 vaccines contain microchips', 50, 50);
+            ctx.font = '18px Arial';
+            ctx.fillText('This is a test image for OCR', 50, 100);
+            ctx.fillText('Created: ' + new Date().toLocaleDateString(), 50, 150);
+            
+            canvas.style.display = 'block';
+            
+            // Convert to blob and create file input
+            canvas.toBlob(blob => {
+                const file = new File([blob], 'test-image.png', { type: 'image/png' });
+                
+                // Create a new file input with the test image
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                
+                document.getElementById('imageInput1').files = dt.files;
+                document.getElementById('imageInput2').files = dt.files;
+                
+                resultDiv.innerHTML = '✅ Test image created and loaded into file inputs!';
+                resultDiv.className = 'test-section success';
+            });
+        }
+
+        // Auto-run initial tests
+        window.onload = function() {
+            setTimeout(() => {
+                testConfig();
+                setTimeout(testConnection, 1000);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

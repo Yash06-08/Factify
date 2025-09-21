@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .loading { background-color: #fff3cd; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Gemini API Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Configuration Check</h2>
+        <button onclick="checkConfig()">Check Config</button>
+        <div id="configResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. API Manager Test</h2>
+        <button onclick="testAPIManager()">Test API Manager</button>
+        <div id="apiManagerResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Gemini Connection Test</h2>
+        <button onclick="testGeminiConnection()">Test Connection</button>
+        <div id="connectionResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Image OCR Test</h2>
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="testImageOCR()">Test Image OCR</button>
+        <div id="ocrResult"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Console Logs</h2>
+        <div id="consoleLogs"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-manager.js"></script>
+    <script>
+        let apiManager;
+        let logs = [];
+
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.log = function(...args) {
+            logs.push({type: 'log', message: args.join(' '), time: new Date().toLocaleTimeString()});
+            updateLogs();
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            logs.push({type: 'error', message: args.join(' '), time: new Date().toLocaleTimeString()});
+            updateLogs();
+            originalError.apply(console, args);
+        };
+
+        console.warn = function(...args) {
+            logs.push({type: 'warn', message: args.join(' '), time: new Date().toLocaleTimeString()});
+            updateLogs();
+            originalWarn.apply(console, args);
+        };
+
+        function updateLogs() {
+            const logsDiv = document.getElementById('consoleLogs');
+            logsDiv.innerHTML = '<pre>' + logs.map(log => 
+                `[${log.time}] ${log.type.toUpperCase()}: ${log.message}`
+            ).join('\\n') + '</pre>';
+        }
+
+        function checkConfig() {
+            const resultDiv = document.getElementById('configResult');
+            try {
+                resultDiv.innerHTML = `
+                    <strong>Configuration Status:</strong><br>
+                    window.API_KEYS exists: ${typeof window.API_KEYS !== 'undefined'}<br>
+                    GEMINI_API_KEY: ${window.API_KEYS ? window.API_KEYS.GEMINI_API_KEY.substring(0, 10) + '...' : 'Not found'}<br>
+                    API Key Length: ${window.API_KEYS ? window.API_KEYS.GEMINI_API_KEY.length : 'N/A'}<br>
+                    Starts with AIza: ${window.API_KEYS ? window.API_KEYS.GEMINI_API_KEY.startsWith('AIza') : 'N/A'}
+                `;
+                resultDiv.className = 'test-section success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Config Error:</strong> ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        function testAPIManager() {
+            const resultDiv = document.getElementById('apiManagerResult');
+            try {
+                apiManager = new APIManager();
+                resultDiv.innerHTML = `
+                    <strong>API Manager Status:</strong><br>
+                    Initialized: ${apiManager ? 'Yes' : 'No'}<br>
+                    Config loaded: ${apiManager.config ? 'Yes' : 'No'}<br>
+                    Services: ${apiManager.services ? Object.keys(apiManager.services).join(', ') : 'None'}<br>
+                    Gemini service: ${apiManager.services && apiManager.services.gemini ? 'Available' : 'Not available'}<br>
+                    Gemini API key valid: ${apiManager.services && apiManager.services.gemini ? apiManager.services.gemini.isValidApiKey : 'N/A'}
+                `;
+                resultDiv.className = 'test-section success';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>API Manager Error:</strong> ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testGeminiConnection() {
+            const resultDiv = document.getElementById('connectionResult');
+            if (!apiManager) {
+                resultDiv.innerHTML = 'Please test API Manager first';
+                resultDiv.className = 'test-section error';
+                return;
+            }
+
+            resultDiv.innerHTML = 'Testing connection...';
+            resultDiv.className = 'test-section loading';
+
+            try {
+                const result = await apiManager.services.gemini.testConnection();
+                resultDiv.innerHTML = `
+                    <strong>Connection Test:</strong><br>
+                    Success: ${result.success}<br>
+                    Message: ${result.message}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                resultDiv.innerHTML = `<strong>Connection Error:</strong> ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        async function testImageOCR() {
+            const fileInput = document.getElementById('imageInput');
+            const resultDiv = document.getElementById('ocrResult');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = 'Please select an image file first.';
+                resultDiv.className = 'test-section error';
+                return;
+            }
+
+            if (!apiManager) {
+                resultDiv.innerHTML = 'Please test API Manager first';
+                resultDiv.className = 'test-section error';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            resultDiv.innerHTML = `Testing OCR on ${file.name} (${file.size} bytes, ${file.type})...`;
+            resultDiv.className = 'test-section loading';
+
+            try {
+                console.log('Starting OCR test with file:', file.name, file.type, file.size);
+                const result = await apiManager.services.gemini.extractTextFromImage(file);
+                console.log('OCR result:', result);
+                
+                resultDiv.innerHTML = `
+                    <strong>OCR Test Result:</strong><br>
+                    Success: ${result.success}<br>
+                    Has Text: ${result.hasText}<br>
+                    Confidence: ${result.confidence}<br>
+                    Source: ${result.source}<br>
+                    Text: "${result.text}"<br>
+                    ${result.error ? `Error: ${result.error}` : ''}
+                `;
+                resultDiv.className = result.success ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                console.error('OCR test failed:', error);
+                resultDiv.innerHTML = `<strong>OCR Error:</strong> ${error.message}`;
+                resultDiv.className = 'test-section error';
+            }
+        }
+
+        // Auto-run tests
+        window.onload = function() {
+            setTimeout(() => {
+                checkConfig();
+                setTimeout(() => {
+                    testAPIManager();
+                    setTimeout(() => {
+                        testGeminiConnection();
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

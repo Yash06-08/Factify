@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Detection Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .loading { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+        canvas { border: 1px solid #ccc; margin: 10px 0; }
+        details { margin: 10px 0; }
+        summary { cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🔍 AI Detection Debug Tool</h1>
+    <p>This tool helps debug the AI generation analysis pipeline step by step.</p>
+    
+    <div class="grid">
+        <div class="test-section">
+            <h2>1. Configuration Check</h2>
+            <button onclick="checkConfiguration()">Check Config</button>
+            <div id="configStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. API Services Status</h2>
+            <button onclick="checkServices()">Check Services</button>
+            <div id="servicesStatus"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Create Test Images</h2>
+        <div class="grid">
+            <div>
+                <button onclick="createRealImage()">Create 'Real' Image</button>
+                <canvas id="realCanvas" width="300" height="200" style="display: none;"></canvas>
+                <div id="realImageStatus"></div>
+            </div>
+            <div>
+                <button onclick="createAIImage()">Create 'AI-like' Image</button>
+                <canvas id="aiCanvas" width="300" height="200" style="display: none;"></canvas>
+                <div id="aiImageStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Manual Image Upload</h2>
+        <input type="file" id="manualImageInput" accept="image/*">
+        <button onclick="testManualImage()">Test Manual Image</button>
+        <div id="manualImageStatus"></div>
+    </div>
+
+    <div class="test-section full-width">
+        <h2>5. AI Detection Pipeline Test</h2>
+        <div class="grid">
+            <div>
+                <h3>Step-by-Step Analysis</h3>
+                <button onclick="runStepByStepTest()">Run Step-by-Step Test</button>
+                <div id="stepByStepResults"></div>
+            </div>
+            <div>
+                <h3>Full Pipeline Test</h3>
+                <button onclick="runFullPipelineTest()">Run Full Pipeline</button>
+                <div id="fullPipelineResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section full-width">
+        <h2>6. Debug Information</h2>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <pre id="debugLogs"></pre>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-manager.js"></script>
+    <script>
+        let logs = [];
+        let apiManager;
+        let testImages = {};
+
+        // Capture all console output
+        ['log', 'error', 'warn', 'info'].forEach(method => {
+            const original = console[method];
+            console[method] = function(...args) {
+                const timestamp = new Date().toLocaleTimeString();
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                logs.push(`[${timestamp}] ${method.toUpperCase()}: ${message}`);
+                updateLogs();
+                original.apply(console, args);
+            };
+        });
+
+        function updateLogs() {
+            document.getElementById('debugLogs').textContent = logs.slice(-50).join('\\n');
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogs();
+        }
+
+        async function checkConfiguration() {
+            const statusDiv = document.getElementById('configStatus');
+            statusDiv.innerHTML = 'Checking...';
+            statusDiv.className = 'test-section loading';
+
+            try {
+                const hasConfig = typeof window.API_KEYS !== 'undefined';
+                const hasGemini = hasConfig && window.API_KEYS.GEMINI_API_KEY && !window.API_KEYS.GEMINI_API_KEY.includes('your_');
+                const hasSightEngine = hasConfig && window.API_KEYS.SIGHTENGINE_API_USER && !window.API_KEYS.SIGHTENGINE_API_USER.includes('your_');
+
+                statusDiv.innerHTML = `
+                    <strong>Configuration Status:</strong><br>
+                    ✅ Config loaded: ${hasConfig}<br>
+                    ${hasGemini ? '✅' : '❌'} Gemini API key: ${hasGemini ? 'Configured' : 'Missing/Invalid'}<br>
+                    ${hasSightEngine ? '✅' : '❌'} SightEngine API: ${hasSightEngine ? 'Configured' : 'Missing/Invalid'}<br>
+                    <br>
+                    <strong>Available for AI Detection:</strong> ${hasGemini || hasSightEngine ? 'Yes' : 'No'}
+                `;
+                statusDiv.className = (hasGemini || hasSightEngine) ? 'test-section success' : 'test-section error';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                statusDiv.className = 'test-section error';
+            }
+        }
+
+        async function checkServices() {
+            const statusDiv = document.getElementById('servicesStatus');
+            statusDiv.innerHTML = 'Checking services...';
+            statusDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) {
+                    apiManager = new APIManager();
+                }
+
+                const geminiConfigured = apiManager.isConfigured('gemini');
+                const sightEngineConfigured = apiManager.isConfigured('sightEngine');
+
+                let geminiStatus = 'Not configured';
+                let sightEngineStatus = 'Not configured';
+
+                if (geminiConfigured) {
+                    try {
+                        const geminiTest = await apiManager.services.gemini.testConnection();
+                        geminiStatus = geminiTest.success ? '✅ Working' : `❌ ${geminiTest.message}`;
+                    } catch (error) {
+                        geminiStatus = `❌ Error: ${error.message}`;
+                    }
+                }
+
+                if (sightEngineConfigured) {
+                    try {
+                        const sightEngineTest = await apiManager.services.sightEngine.testConnection();
+                        sightEngineStatus = sightEngineTest.success ? '✅ Working' : `❌ ${sightEngineTest.message}`;
+                    } catch (error) {
+                        sightEngineStatus = `❌ Error: ${error.message}`;
+                    }
+                }
+
+                statusDiv.innerHTML = `
+                    <strong>Service Status:</strong><br>
+                    Gemini: ${geminiStatus}<br>
+                    SightEngine: ${sightEngineStatus}<br>
+                    <br>
+                    <strong>AI Detection Available:</strong> ${geminiConfigured || sightEngineConfigured ? 'Yes' : 'No'}
+                `;
+                statusDiv.className = 'test-section info';
+            } catch (error) {
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                statusDiv.className = 'test-section error';
+            }
+        }
+
+        function createRealImage() {
+            const canvas = document.getElementById('realCanvas');
+            const ctx = canvas.getContext('2d');
+            const statusDiv = document.getElementById('realImageStatus');
+            
+            // Create a "realistic" image with natural imperfections
+            ctx.fillStyle = '#87CEEB'; // Sky blue background
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add some clouds (imperfect shapes)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(80, 60, 30, 0, Math.PI * 2);
+            ctx.arc(120, 50, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add ground
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, 150, canvas.width, 50);
+            
+            // Add text with natural imperfections
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.fillText('Beautiful Nature Photo', 50, 180);
+            ctx.font = '12px Arial';
+            ctx.fillText('Taken with iPhone 12', 50, 195);
+            
+            canvas.style.display = 'block';
+            
+            // Convert to file
+            canvas.toBlob(blob => {
+                testImages.real = new File([blob], 'real-image.png', { type: 'image/png' });
+                statusDiv.innerHTML = '✅ Real-like test image created';
+                statusDiv.className = 'test-section success';
+            });
+        }
+
+        function createAIImage() {
+            const canvas = document.getElementById('aiCanvas');
+            const ctx = canvas.getContext('2d');
+            const statusDiv = document.getElementById('aiImageStatus');
+            
+            // Create an "AI-like" image with suspicious patterns
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#FF6B6B');
+            gradient.addColorStop(1, '#4ECDC4');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Perfect geometric shapes (AI-like)
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(150, 100, 50, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Suspiciously perfect text
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 18px Arial';
+            ctx.fillText('PERFECT AI GENERATED', 20, 50);
+            ctx.font = '14px Arial';
+            ctx.fillText('Lorem ipsum dolor sit amet', 20, 170);
+            ctx.fillText('Consectetur adipiscing elit', 20, 185);
+            
+            canvas.style.display = 'block';
+            
+            // Convert to file
+            canvas.toBlob(blob => {
+                testImages.ai = new File([blob], 'ai-image.png', { type: 'image/png' });
+                statusDiv.innerHTML = '✅ AI-like test image created';
+                statusDiv.className = 'test-section success';
+            });
+        }
+
+        async function testManualImage() {
+            const fileInput = document.getElementById('manualImageInput');
+            const statusDiv = document.getElementById('manualImageStatus');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                statusDiv.innerHTML = '⚠️ Please select an image file first';
+                statusDiv.className = 'test-section error';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            testImages.manual = file;
+            
+            statusDiv.innerHTML = `✅ Manual image loaded: ${file.name} (${file.size} bytes)`;
+            statusDiv.className = 'test-section success';
+        }
+
+        async function runStepByStepTest() {
+            const resultsDiv = document.getElementById('stepByStepResults');
+            resultsDiv.innerHTML = 'Running step-by-step analysis...';
+            resultsDiv.className = 'test-section loading';
+
+            try {
+                if (!apiManager) apiManager = new APIManager();
+                
+                const testFile = testImages.real || testImages.ai || testImages.manual;
+                if (!testFile) {
+                    resultsDiv.innerHTML = '❌ No test image available. Create or upload an image first.';
+                    resultsDiv.className = 'test-section error';
+                    return;
+                }
+
+                let results = '';
+                
+                // Step 1: Check API Manager
+                results += '<h4>Step 1: API Manager Check</h4>';
+                results += `✅ API Manager initialized: ${apiManager ? 'Yes' : 'No'}<br>`;
+                results += `✅ SightEngine configured: ${apiManager.isConfigured('sightEngine')}<br><br>`;
+                
+                // Step 2: Direct SightEngine call
+                if (apiManager.isConfigured('sightEngine')) {
+                    results += '<h4>Step 2: Direct SightEngine Analysis</h4>';
+                    try {
+                        const imageUrl = URL.createObjectURL(testFile);
+                        const sightEngineResult = await apiManager.services.sightEngine.analyzeImage(imageUrl);
+                        URL.revokeObjectURL(imageUrl);
+                        
+                        results += `✅ SightEngine call successful: ${sightEngineResult.success}<br>`;
+                        results += `✅ AI detection data: ${sightEngineResult.aiGenerated ? 'Present' : 'Missing'}<br>`;
+                        if (sightEngineResult.aiGenerated) {
+                            results += `📊 AI Score: ${sightEngineResult.aiGenerated.score || 'N/A'}<br>`;
+                            results += `🎯 Confidence: ${Math.round((sightEngineResult.aiGenerated.confidence || 0) * 100)}%<br>`;
+                            results += `🔍 Method: ${sightEngineResult.aiGenerated.method || 'N/A'}<br>`;
+                        }
+                        results += '<br>';
+                        
+                        results += '<details><summary>Raw SightEngine Response</summary>';
+                        results += `<pre>${JSON.stringify(sightEngineResult, null, 2)}</pre></details><br>`;
+                    } catch (error) {
+                        results += `❌ SightEngine error: ${error.message}<br><br>`;
+                    }
+                }
+                
+                // Step 3: Full pipeline analysis
+                results += '<h4>Step 3: Full Pipeline Analysis</h4>';
+                try {
+                    const analysisResult = await apiManager.analyzeContent('', 'image', testFile);
+                    results += `✅ Analysis successful: ${analysisResult.success}<br>`;
+                    results += `✅ Image analysis present: ${analysisResult.analysis && analysisResult.analysis.imageAnalysis ? 'Yes' : 'No'}<br>`;
+                    
+                    if (analysisResult.analysis && analysisResult.analysis.imageAnalysis) {
+                        const imageAnalysis = analysisResult.analysis.imageAnalysis;
+                        results += `✅ AI detection in image analysis: ${imageAnalysis.aiGenerated ? 'Present' : 'Missing'}<br>`;
+                    }
+                    
+                    results += '<details><summary>Full Analysis Response</summary>';
+                    results += `<pre>${JSON.stringify(analysisResult, null, 2)}</pre></details><br>`;
+                } catch (error) {
+                    results += `❌ Pipeline error: ${error.message}<br><br>`;
+                }
+
+                resultsDiv.innerHTML = results;
+                resultsDiv.className = 'test-section info';
+            } catch (error) {
+                resultsDiv.innerHTML = `❌ Test failed: ${error.message}`;
+                resultsDiv.className = 'test-section error';
+            }
+        }
+
+        async function runFullPipelineTest() {
+            const resultsDiv = document.getElementById('fullPipelineResults');
+            resultsDiv.innerHTML = 'Running full pipeline test...';
+            resultsDiv.className = 'test-section loading';
+
+            try {
+                const testFiles = [testImages.real, testImages.ai, testImages.manual].filter(f => f);
+                
+                if (testFiles.length === 0) {
+                    resultsDiv.innerHTML = '❌ No test images available. Create or upload images first.';
+                    resultsDiv.className = 'test-section error';
+                    return;
+                }
+
+                let results = '<h4>Full Pipeline Test Results</h4>';
+                
+                for (let i = 0; i < testFiles.length; i++) {
+                    const file = testFiles[i];
+                    const fileName = file.name;
+                    
+                    results += `<h5>Testing: ${fileName}</h5>`;
+                    
+                    try {
+                        // Simulate the exact same call as performAIDetection
+                        const analysisResult = await apiManager.analyzeContent('', 'image', file);
+                        
+                        if (analysisResult.success && analysisResult.analysis.imageAnalysis) {
+                            const result = analysisResult.analysis.imageAnalysis;
+                            
+                            if (result.success && result.aiGenerated) {
+                                const aiData = result.aiGenerated;
+                                const confidencePercent = Math.round((aiData.confidence || 0.5) * 100);
+                                const probabilityScore = aiData.probability || aiData.score || 50;
+                                
+                                results += `✅ AI Detection: Success<br>`;
+                                results += `📊 AI Probability: ${Math.round(probabilityScore)}%<br>`;
+                                results += `🎯 Confidence: ${confidencePercent}%<br>`;
+                                results += `🔍 Method: ${aiData.method || 'Unknown'}<br>`;
+                                results += `📋 Indicators: ${aiData.indicators ? aiData.indicators.length : 0}<br>`;
+                            } else {
+                                results += `⚠️ AI Detection: No data found<br>`;
+                                results += `📋 Result structure: ${JSON.stringify(Object.keys(result))}<br>`;
+                            }
+                        } else {
+                            results += `❌ Analysis failed or no image analysis<br>`;
+                            results += `📋 Success: ${analysisResult.success}<br>`;
+                            results += `📋 Has imageAnalysis: ${!!(analysisResult.analysis && analysisResult.analysis.imageAnalysis)}<br>`;
+                        }
+                    } catch (error) {
+                        results += `❌ Error: ${error.message}<br>`;
+                    }
+                    
+                    results += '<br>';
+                }
+
+                resultsDiv.innerHTML = results;
+                resultsDiv.className = 'test-section info';
+            } catch (error) {
+                resultsDiv.innerHTML = `❌ Test failed: ${error.message}`;
+                resultsDiv.className = 'test-section error';
+            }
+        }
+
+        // Auto-run initial checks
+        window.onload = function() {
+            setTimeout(() => {
+                checkConfiguration();
+                setTimeout(checkServices, 1000);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

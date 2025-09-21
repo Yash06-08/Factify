@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Gemini Test</title>
+</head>
+<body>
+    <h1>Simple Gemini API Test</h1>
+    <button onclick="runTest()">Run Test</button>
+    <div id="result"></div>
+
+    <script src="config.js"></script>
+    <script>
+        console.log('Config loaded:', window.API_KEYS);
+        console.log('Gemini API Key:', window.API_KEYS ? window.API_KEYS.GEMINI_API_KEY : 'Not found');
+    </script>
+    
+    <script src="api-manager.js"></script>
+    
+    <script>
+        async function runTest() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Creating API Manager...');
+                const manager = new APIManager();
+                console.log('API Manager created:', manager);
+                console.log('Config:', manager.config);
+                console.log('Services:', manager.services);
+                console.log('Gemini service:', manager.services.gemini);
+                console.log('Is Gemini configured:', manager.isConfigured('gemini'));
+                
+                if (manager.services.gemini) {
+                    console.log('Testing Gemini connection...');
+                    const connectionResult = await manager.services.gemini.testConnection();
+                    console.log('Connection result:', connectionResult);
+                    
+                    resultDiv.innerHTML = `
+                        <h3>Test Results:</h3>
+                        <p>API Manager: ${manager ? 'Created' : 'Failed'}</p>
+                        <p>Config loaded: ${manager.config ? 'Yes' : 'No'}</p>
+                        <p>Gemini configured: ${manager.isConfigured('gemini')}</p>
+                        <p>Connection: ${connectionResult.success ? 'Success' : 'Failed'}</p>
+                        <p>Message: ${connectionResult.message}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = 'Gemini service not available';
+                }
+            } catch (error) {
+                console.error('Test failed:', error);
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        // Auto-run test
+        setTimeout(runTest, 1000);
+    </script>
+</body>
+</html>

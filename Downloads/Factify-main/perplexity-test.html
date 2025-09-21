@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perplexity AI Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .test-container { background: white; border-radius: 12px; padding: 24px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .test-header { border-bottom: 2px solid #e5e5e5; padding-bottom: 16px; margin-bottom: 24px; }
+        .test-header h2 { margin: 0; color: #333; }
+        .test-section { margin: 24px 0; padding: 20px; background: #f9f9f9; border-radius: 8px; }
+        .test-button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 8px; }
+        .test-button:hover { background: #0056b3; }
+        .test-button:disabled { background: #ccc; cursor: not-allowed; }
+        .test-result { margin: 16px 0; padding: 16px; border-radius: 6px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .api-key-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; margin: 8px 0; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .feature-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+        .feature-card h3 { margin-top: 0; color: #333; }
+        textarea { width: 100%; height: 100px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
+        pre { background: #f8f9fa; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .citation { background: #e9ecef; padding: 8px; margin: 4px 0; border-radius: 4px; font-size: 14px; }
+        .citation a { color: #007bff; text-decoration: none; }
+        .citation a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Perplexity AI Integration Test Suite</h1>
+    <p>This tool tests all Perplexity AI integrations including fact-checking, chatbot, research, and image analysis.</p>
+
+    <div class="test-container">
+        <div class="test-header">
+            <h2>⚙️ Setup & Configuration</h2>
+        </div>
+        
+        <div class="test-section">
+            <h3>API Key Configuration</h3>
+            <input type="password" id="apiKeyInput" class="api-key-input" placeholder="Enter your Perplexity API key (pplx-...)">
+            <button class="test-button" onclick="setApiKey()">Set API Key</button>
+            <button class="test-button" onclick="testConnection()">Test Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <div class="test-header">
+            <h2>🧪 Feature Tests</h2>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📋 Fact-Checking</h3>
+                <textarea id="factCheckInput" placeholder="Enter a claim to fact-check (e.g., 'COVID-19 vaccines contain microchips')"></textarea>
+                <button class="test-button" onclick="testFactCheck()">Test Fact-Check</button>
+                <div id="factCheckResult"></div>
+            </div>
+
+            <div class="feature-card">
+                <h3>💬 Chatbot</h3>
+                <textarea id="chatInput" placeholder="Enter a question or message for the chatbot"></textarea>
+                <button class="test-button" onclick="testChatbot()">Test Chatbot</button>
+                <div id="chatResult"></div>
+            </div>
+
+            <div class="feature-card">
+                <h3>🔬 Research</h3>
+                <textarea id="researchInput" placeholder="Enter a research topic (e.g., 'Climate change effects 2024')"></textarea>
+                <button class="test-button" onclick="testResearch()">Test Research</button>
+                <div id="researchResult"></div>
+            </div>
+
+            <div class="feature-card">
+                <h3>🖼️ Image Analysis</h3>
+                <textarea id="imageTextInput" placeholder="Enter text extracted from an image to analyze"></textarea>
+                <button class="test-button" onclick="testImageAnalysis()">Test Image Analysis</button>
+                <div id="imageAnalysisResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <div class="test-header">
+            <h2>📊 Performance Tests</h2>
+        </div>
+        
+        <div class="test-section">
+            <h3>Batch Testing</h3>
+            <button class="test-button" onclick="runBatchTests()">Run All Tests</button>
+            <button class="test-button" onclick="runPerformanceTest()">Performance Test</button>
+            <div id="batchTestResult"></div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <div class="test-header">
+            <h2>📈 Test Results & Analytics</h2>
+        </div>
+        
+        <div class="test-section">
+            <div id="testAnalytics"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="api-manager.js"></script>
+    <script>
+        let perplexityService;
+        let testResults = {
+            connection: null,
+            factCheck: null,
+            chatbot: null,
+            research: null,
+            imageAnalysis: null,
+            performance: null
+        };
+
+        function setApiKey() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            if (!apiKey) {
+                showResult('connectionResult', 'Please enter an API key', 'error');
+                return;
+            }
+
+            try {
+                perplexityService = new PerplexityAPIService(apiKey);
+                
+                // Update global config if available
+                if (typeof window.API_KEYS !== 'undefined') {
+                    window.API_KEYS.PERPLEXITY_API_KEY = apiKey;
+                }
+                
+                showResult('connectionResult', 'API key set successfully! Click "Test Connection" to verify.', 'success');
+            } catch (error) {
+                showResult('connectionResult', `Failed to initialize service: ${error.message}`, 'error');
+            }
+        }
+
+        async function testConnection() {
+            if (!perplexityService) {
+                showResult('connectionResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('connectionResult', 'Testing connection...', 'loading');
+            
+            try {
+                const start = performance.now();
+                const result = await perplexityService.testConnection();
+                const duration = performance.now() - start;
+                
+                testResults.connection = { success: result.success, duration };
+                
+                if (result.success) {
+                    showResult('connectionResult', `✅ Connection successful! (${Math.round(duration)}ms)\\n${result.message}`, 'success');
+                } else {
+                    showResult('connectionResult', `❌ Connection failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                testResults.connection = { success: false, duration: null, error: error.message };
+                showResult('connectionResult', `❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testFactCheck() {
+            const input = document.getElementById('factCheckInput').value.trim();
+            if (!input) {
+                showResult('factCheckResult', 'Please enter a claim to fact-check', 'error');
+                return;
+            }
+
+            if (!perplexityService) {
+                showResult('factCheckResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('factCheckResult', 'Fact-checking...', 'loading');
+            
+            try {
+                const start = performance.now();
+                const result = await perplexityService.analyzeContent(input, 'fact-check');
+                const duration = performance.now() - start;
+                
+                testResults.factCheck = { success: result.success, duration, credibilityScore: result.credibilityScore };
+                
+                let resultHtml = `
+                    <div class="success">
+                        <strong>✅ Fact-check completed (${Math.round(duration)}ms)</strong><br>
+                        <strong>Credibility Score:</strong> ${result.credibilityScore}/100<br>
+                        <strong>Verdict:</strong> ${result.verdict}<br>
+                        <strong>Brief:</strong> ${result.briefExplanation || 'N/A'}
+                    </div>
+                `;
+                
+                if (result.citations && result.citations.length > 0) {
+                    resultHtml += '<div class="citations"><strong>Sources:</strong>';
+                    result.citations.forEach(citation => {
+                        resultHtml += `<div class="citation"><a href="${citation.url}" target="_blank">${citation.title}</a></div>`;
+                    });
+                    resultHtml += '</div>';
+                }
+                
+                resultHtml += `<details><summary>Full Analysis</summary><pre>${result.analysis}</pre></details>`;
+                
+                document.getElementById('factCheckResult').innerHTML = resultHtml;
+            } catch (error) {
+                testResults.factCheck = { success: false, duration: null, error: error.message };
+                showResult('factCheckResult', `❌ Fact-check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testChatbot() {
+            const input = document.getElementById('chatInput').value.trim();
+            if (!input) {
+                showResult('chatResult', 'Please enter a message', 'error');
+                return;
+            }
+
+            if (!perplexityService) {
+                showResult('chatResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('chatResult', 'Chatbot responding...', 'loading');
+            
+            try {
+                const start = performance.now();
+                const result = await perplexityService.chat(input);
+                const duration = performance.now() - start;
+                
+                testResults.chatbot = { success: result.success, duration };
+                
+                let resultHtml = `
+                    <div class="success">
+                        <strong>✅ Chat response (${Math.round(duration)}ms)</strong><br>
+                        <strong>Response:</strong> ${result.response}
+                    </div>
+                `;
+                
+                if (result.citations && result.citations.length > 0) {
+                    resultHtml += '<div class="citations"><strong>Sources:</strong>';
+                    result.citations.forEach(citation => {
+                        resultHtml += `<div class="citation"><a href="${citation.url}" target="_blank">${citation.title}</a></div>`;
+                    });
+                    resultHtml += '</div>';
+                }
+                
+                document.getElementById('chatResult').innerHTML = resultHtml;
+            } catch (error) {
+                testResults.chatbot = { success: false, duration: null, error: error.message };
+                showResult('chatResult', `❌ Chat failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testResearch() {
+            const input = document.getElementById('researchInput').value.trim();
+            if (!input) {
+                showResult('researchResult', 'Please enter a research topic', 'error');
+                return;
+            }
+
+            if (!perplexityService) {
+                showResult('researchResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('researchResult', 'Researching...', 'loading');
+            
+            try {
+                const start = performance.now();
+                const result = await perplexityService.research(input);
+                const duration = performance.now() - start;
+                
+                testResults.research = { success: result.success, duration };
+                
+                let resultHtml = `
+                    <div class="success">
+                        <strong>✅ Research completed (${Math.round(duration)}ms)</strong><br>
+                    </div>
+                `;
+                
+                if (result.citations && result.citations.length > 0) {
+                    resultHtml += '<div class="citations"><strong>Sources:</strong>';
+                    result.citations.forEach(citation => {
+                        resultHtml += `<div class="citation"><a href="${citation.url}" target="_blank">${citation.title}</a></div>`;
+                    });
+                    resultHtml += '</div>';
+                }
+                
+                resultHtml += `<details><summary>Research Results</summary><pre>${result.analysis}</pre></details>`;
+                
+                document.getElementById('researchResult').innerHTML = resultHtml;
+            } catch (error) {
+                testResults.research = { success: false, duration: null, error: error.message };
+                showResult('researchResult', `❌ Research failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImageAnalysis() {
+            const input = document.getElementById('imageTextInput').value.trim();
+            if (!input) {
+                showResult('imageAnalysisResult', 'Please enter extracted text to analyze', 'error');
+                return;
+            }
+
+            if (!perplexityService) {
+                showResult('imageAnalysisResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('imageAnalysisResult', 'Analyzing image text...', 'loading');
+            
+            try {
+                const start = performance.now();
+                const result = await perplexityService.analyzeImageText(input);
+                const duration = performance.now() - start;
+                
+                testResults.imageAnalysis = { success: result.success, duration };
+                
+                let resultHtml = `
+                    <div class="success">
+                        <strong>✅ Image analysis completed (${Math.round(duration)}ms)</strong><br>
+                        <strong>Credibility Score:</strong> ${result.credibilityScore}/100<br>
+                        <strong>Verdict:</strong> ${result.verdict}
+                    </div>
+                `;
+                
+                if (result.citations && result.citations.length > 0) {
+                    resultHtml += '<div class="citations"><strong>Sources:</strong>';
+                    result.citations.forEach(citation => {
+                        resultHtml += `<div class="citation"><a href="${citation.url}" target="_blank">${citation.title}</a></div>`;
+                    });
+                    resultHtml += '</div>';
+                }
+                
+                resultHtml += `<details><summary>Full Analysis</summary><pre>${result.analysis}</pre></details>`;
+                
+                document.getElementById('imageAnalysisResult').innerHTML = resultHtml;
+            } catch (error) {
+                testResults.imageAnalysis = { success: false, duration: null, error: error.message };
+                showResult('imageAnalysisResult', `❌ Image analysis failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function runBatchTests() {
+            if (!perplexityService) {
+                showResult('batchTestResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('batchTestResult', 'Running batch tests...', 'loading');
+            
+            // Set sample inputs
+            document.getElementById('factCheckInput').value = 'The Earth is flat';
+            document.getElementById('chatInput').value = 'What is artificial intelligence?';
+            document.getElementById('researchInput').value = 'Latest developments in renewable energy';
+            document.getElementById('imageTextInput').value = 'Breaking: Miracle cure discovered by local doctor';
+            
+            // Run all tests
+            await testFactCheck();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limiting
+            
+            await testChatbot();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testResearch();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testImageAnalysis();
+            
+            // Show summary
+            const successCount = Object.values(testResults).filter(r => r && r.success).length;
+            const totalTests = Object.keys(testResults).filter(k => testResults[k] !== null).length;
+            
+            showResult('batchTestResult', `✅ Batch tests completed: ${successCount}/${totalTests} successful`, 'success');
+            updateAnalytics();
+        }
+
+        async function runPerformanceTest() {
+            if (!perplexityService) {
+                showResult('batchTestResult', 'Please set an API key first', 'error');
+                return;
+            }
+
+            showResult('batchTestResult', 'Running performance test...', 'loading');
+            
+            const testMessage = 'What is the capital of France?';
+            const iterations = 3;
+            const durations = [];
+            
+            try {
+                for (let i = 0; i < iterations; i++) {
+                    const start = performance.now();
+                    await perplexityService.chat(testMessage);
+                    const duration = performance.now() - start;
+                    durations.push(duration);
+                    
+                    if (i < iterations - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limiting
+                    }
+                }
+                
+                const avgDuration = durations.reduce((a, b) => a + b, 0) / durations.length;
+                const minDuration = Math.min(...durations);
+                const maxDuration = Math.max(...durations);
+                
+                testResults.performance = { avgDuration, minDuration, maxDuration, iterations };
+                
+                showResult('batchTestResult', `
+                    ✅ Performance test completed (${iterations} iterations):<br>
+                    Average: ${Math.round(avgDuration)}ms<br>
+                    Min: ${Math.round(minDuration)}ms<br>
+                    Max: ${Math.round(maxDuration)}ms
+                `, 'success');
+                
+                updateAnalytics();
+            } catch (error) {
+                showResult('batchTestResult', `❌ Performance test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `test-result ${type}`;
+        }
+
+        function updateAnalytics() {
+            const analyticsDiv = document.getElementById('testAnalytics');
+            
+            let analyticsHtml = '<h3>Test Summary</h3>';
+            
+            // Overall stats
+            const completedTests = Object.values(testResults).filter(r => r !== null);
+            const successfulTests = completedTests.filter(r => r.success);
+            
+            analyticsHtml += `
+                <div class="info">
+                    <strong>Overall Results:</strong><br>
+                    Tests Completed: ${completedTests.length}<br>
+                    Successful: ${successfulTests.length}<br>
+                    Success Rate: ${completedTests.length > 0 ? Math.round((successfulTests.length / completedTests.length) * 100) : 0}%
+                </div>
+            `;
+            
+            // Individual test results
+            if (completedTests.length > 0) {
+                analyticsHtml += '<h4>Individual Test Results:</h4>';
+                
+                Object.entries(testResults).forEach(([testName, result]) => {
+                    if (result) {
+                        analyticsHtml += `
+                            <div class="test-result ${result.success ? 'success' : 'error'}">
+                                <strong>${testName}:</strong> ${result.success ? '✅ Success' : '❌ Failed'}
+                                ${result.duration ? ` (${Math.round(result.duration)}ms)` : ''}
+                                ${result.error ? `<br>Error: ${result.error}` : ''}
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            analyticsDiv.innerHTML = analyticsHtml;
+        }
+
+        // Initialize with sample data
+        window.onload = function() {
+            document.getElementById('factCheckInput').value = 'COVID-19 vaccines contain microchips that track people';
+            document.getElementById('chatInput').value = 'What are the latest developments in artificial intelligence?';
+            document.getElementById('researchInput').value = 'Climate change impacts on global food security 2024';
+            document.getElementById('imageTextInput').value = 'BREAKING: Local doctor discovers miracle cure that pharmaceutical companies don\\'t want you to know about!';
+        };
+    </script>
+</body>
+</html>
