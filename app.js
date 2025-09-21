@@ -1000,24 +1000,117 @@ async function performOCR(file) {
   ocrConfidence.textContent = 'Processing...';
   
   try {
-    // Use API Manager's OCR service if available
-    if (typeof apiManager !== 'undefined' && apiManager !== null && apiManager.isConfigured('ocr')) {
-      const result = await apiManager.services.ocr.extractText(file);
-      
-      if (result.success && result.text.trim()) {
-        ocrText.value = result.text.trim();
-        ocrConfidence.textContent = `Confidence: ${Math.round(result.confidence * 100)}%`;
-        ocrText.placeholder = 'No text detected in image...';
-      } else {
-        ocrText.value = '';
-        ocrConfidence.textContent = 'No text detected';
-        ocrText.placeholder = 'No text detected in image...';
+    let ocrSuccess = false;
+    let extractedText = '';
+    let confidenceInfo = '';
+    let methodUsed = '';
+    let ocrResults = null;
+    
+    // Use the comprehensive multi-model analysis
+    if (typeof apiManager !== 'undefined' && apiManager !== null) {
+      try {
+        // Run the full multi-model analysis
+        const analysisResult = await apiManager.analyzeContent('', 'image', file);
+        
+        if (analysisResult.success && analysisResult.analysis.imageAnalysis) {
+          const imageAnalysis = analysisResult.analysis.imageAnalysis;
+          ocrResults = imageAnalysis.ocrResults;
+          
+          if (ocrResults && ocrResults.hasText && ocrResults.text.trim()) {
+            extractedText = ocrResults.text.trim();
+            confidenceInfo = typeof ocrResults.confidence === 'number' ? 
+              `${Math.round(ocrResults.confidence * 100)}%` : ocrResults.confidence;
+            methodUsed = ocrResults.source || ocrResults.method || 'Multi-model OCR';
+            ocrSuccess = true;
+          }
+        }
+      } catch (error) {
+        console.warn('Multi-model OCR analysis failed:', error);
+        
+        // Fallback to individual service calls
+        // Try Gemini Vision OCR first
+        if (apiManager.isConfigured('gemini')) {
+          try {
+            const geminiResult = await apiManager.services.gemini.extractTextFromImage(file);
+            if (geminiResult.success && geminiResult.hasText) {
+              extractedText = geminiResult.text;
+              confidenceInfo = `${Math.round(geminiResult.confidence * 100)}%`;
+              methodUsed = 'Gemini Vision OCR';
+              ocrSuccess = true;
+            }
+          } catch (geminiError) {
+            console.warn('Gemini OCR failed:', geminiError);
+          }
+        }
+        
+        // Try SightEngine OCR if Gemini failed
+        if (!ocrSuccess && apiManager.isConfigured('sightEngine')) {
+          try {
+            const sightEngineResult = await apiManager.services.sightEngine.analyzeImage(file);
+            
+            if (sightEngineResult.success && sightEngineResult.ocrResults && sightEngineResult.ocrResults.hasText) {
+              extractedText = sightEngineResult.ocrResults.text;
+              confidenceInfo = sightEngineResult.ocrResults.confidence;
+              methodUsed = 'SightEngine OCR';
+              ocrSuccess = true;
+            }
+          } catch (sightEngineError) {
+            console.warn('SightEngine OCR failed:', sightEngineError);
+          }
+        }
+        
+        // Final fallback to OCR.space
+        if (!ocrSuccess && apiManager.isConfigured('ocr')) {
+          try {
+            const result = await apiManager.services.ocr.extractText(file);
+            
+            if (result.success && result.text.trim()) {
+              extractedText = result.text.trim();
+              confidenceInfo = typeof result.confidence === 'number' ? `${Math.round(result.confidence * 100)}%` : result.confidence;
+              methodUsed = 'OCR.space';
+              ocrSuccess = true;
+            }
+          } catch (ocrError) {
+            console.warn('OCR.space failed:', ocrError);
+          }
+        }
       }
+    }
+    
+    // Update UI based on results
+    if (ocrSuccess && extractedText.trim()) {
+      ocrText.value = extractedText.trim();
+      
+      let ocrDetailsHTML = `
+        <div class="ocr-details">
+          <span class="confidence-info">Confidence: ${confidenceInfo}</span>
+          <span class="method-info">Method: ${methodUsed}</span>
+      `;
+      
+      // Add language information if available
+      if (ocrResults && ocrResults.language && ocrResults.language !== 'unknown') {
+        ocrDetailsHTML += `<span class="language-info">Language: ${ocrResults.language}</span>`;
+      }
+      
+      // Add text regions information if available
+      if (ocrResults && ocrResults.textRegions && ocrResults.textRegions.length > 0) {
+        ocrDetailsHTML += `<span class="regions-info">Regions: ${ocrResults.textRegions.length}</span>`;
+      }
+      
+      ocrDetailsHTML += '</div>';
+      ocrConfidence.innerHTML = ocrDetailsHTML;
+      ocrText.placeholder = 'Text extracted successfully...';
     } else {
-      // Fallback: Show message about OCR service
       ocrText.value = '';
-      ocrConfidence.textContent = 'OCR service not configured';
-      ocrText.placeholder = 'OCR service not available. Please configure OCR.space API key in config.js';
+      ocrConfidence.textContent = 'No text detected';
+      ocrText.placeholder = 'No text detected in image...';
+    }
+    
+    // Show service configuration status if no services are available
+    if (!apiManager || (!apiManager.isConfigured('gemini') && !apiManager.isConfigured('sightEngine') && !apiManager.isConfigured('ocr'))) {
+      ocrText.value = '';
+      ocrConfidence.textContent = 'OCR services not configured';
+      ocrText.placeholder = 'OCR services not available. Please configure Gemini, SightEngine, or OCR.space API keys in config.js';
     }
   } catch (error) {
     console.error('OCR failed:', error);
@@ -1043,58 +1136,202 @@ async function performAIDetection(file) {
   aiIndicators.innerHTML = '';
   
   try {
-    // Use API Manager's SightEngine service if available
-    if (typeof apiManager !== 'undefined' && apiManager !== null && apiManager.isConfigured('sightEngine')) {
-      const imageUrl = URL.createObjectURL(file);
-      const result = await apiManager.services.sightEngine.analyzeImage(imageUrl);
-      URL.revokeObjectURL(imageUrl);
+    // Use the comprehensive multi-model analysis
+    if (typeof apiManager !== 'undefined' && apiManager !== null) {
+      const analysisResult = await apiManager.analyzeContent('', 'image', file);
       
-      if (result.success && result.aiGenerated) {
-        const aiData = result.aiGenerated;
+      if (analysisResult.success && analysisResult.analysis.imageAnalysis) {
+        const result = analysisResult.analysis.imageAnalysis;
+      
+        if (result.success && result.aiGenerated) {
+          const aiData = result.aiGenerated;
+          
+          // Properly handle confidence and probability from multi-model analysis
+          let confidencePercent, probabilityScore;
+          
+          if (aiData.confidence !== undefined) {
+            // Confidence is already a decimal (0-1), convert to percentage
+            confidencePercent = Math.round(aiData.confidence * 100);
+          } else {
+            confidencePercent = 50; // Default if no confidence available
+          }
+          
+          if (aiData.probability !== undefined) {
+            // Probability should be 0-100 percentage
+            probabilityScore = Math.round(aiData.probability);
+          } else if (aiData.score !== undefined) {
+            // Score might be 0-100 or 0-1, normalize it
+            probabilityScore = aiData.score > 1 ? Math.round(aiData.score) : Math.round(aiData.score * 100);
+          } else {
+            probabilityScore = 50; // Default if no probability available
+          }
         
-        // Update confidence
-        aiConfidence.textContent = `Confidence: ${Math.round(aiData.confidence * 100)}%`;
+        let confidenceHTML = `
+          <div class="confidence-details">
+            <span class="confidence-score">Confidence: ${confidencePercent}%</span>
+            <span class="ai-score">AI Probability: ${probabilityScore}%</span>
+        `;
         
-        // Update verdict
-        if (aiData.isAI) {
-          aiVerdict.textContent = '🤖 Likely AI-Generated';
-          aiVerdict.className = 'ai-verdict likely-ai';
+          // Add consensus information if available
+          if (aiData.consensus) {
+            const consensusIcon = aiData.consensus === 'strong' ? '🎯' : aiData.consensus === 'moderate' ? '⚖️' : '❓';
+            confidenceHTML += `<span class="consensus-info">${consensusIcon} ${aiData.consensus} consensus</span>`;
+          }
+          
+          // Add model information
+          if (result.multiModel && result.models) {
+            confidenceHTML += `<span class="models-info">📊 ${result.models.length} model${result.models.length > 1 ? 's' : ''}: ${result.models.join(', ')}</span>`;
+          }
+        
+          confidenceHTML += '</div>';
+          aiConfidence.innerHTML = confidenceHTML;
+          
+          // Update verdict with enhanced styling based on probability
+          // probabilityScore = AI probability (0-100%)
+          // realProbability = 100 - AI probability
+          const realProbability = 100 - probabilityScore;
+          
+          if (probabilityScore > 90) {
+            // AI probability > 90% (real probability < 10%)
+            aiVerdict.textContent = '🤖 Very Likely AI-Generated';
+            aiVerdict.className = 'ai-verdict very-likely-ai';
+          } else if (probabilityScore > 70) {
+            // AI probability > 70% (real probability < 30%)
+            aiVerdict.textContent = '🤖 Likely AI-Generated';
+            aiVerdict.className = 'ai-verdict likely-ai';
+          } else if (realProbability < 60) {
+            // Real probability < 60% (AI probability > 40%) - show as unclear/maybe fake
+            aiVerdict.textContent = '❓ Unclear - Maybe Fake';
+            aiVerdict.className = 'ai-verdict unclear-maybe-fake';
+          } else if (realProbability >= 80) {
+            // Real probability >= 80% (AI probability <= 20%)
+            aiVerdict.textContent = '📷 Very Likely Real Image';
+            aiVerdict.className = 'ai-verdict very-likely-real';
+          } else {
+            // Real probability 60-80% (AI probability 20-40%)
+            aiVerdict.textContent = '📷 Likely Real Image';
+            aiVerdict.className = 'ai-verdict likely-real';
+          }
+        
+          // Update indicators with comprehensive multi-model information
+          let indicatorsHTML = `<strong>Detection Method:</strong> ${aiData.method || 'Multi-model analysis'}<br>`;
+          
+          // Add model-specific results if available
+          if (aiData.modelResults && aiData.modelResults.length > 1) {
+            indicatorsHTML += `
+              <strong>Individual Model Results:</strong>
+              <div class="model-results">
+                ${aiData.modelResults.map(model => `
+                  <div class="model-result">
+                    <strong>${model.model}:</strong> ${Math.round(model.probability)}% (${model.verdict})
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          }
+          
+          if (aiData.indicators && aiData.indicators.length > 0) {
+            indicatorsHTML += `
+              <strong>Analysis Indicators:</strong>
+              <ul class="ai-indicators-list">
+                ${aiData.indicators.slice(0, 8).map(indicator => `<li>${indicator}</li>`).join('')}
+              </ul>
+            `;
+          }
+          
+          // Add detailed reasoning if available
+          if (aiData.reasoning && aiData.reasoning.length > 10) {
+            const shortReasoning = aiData.reasoning.length > 200 ? 
+              aiData.reasoning.substring(0, 200) + '...' : aiData.reasoning;
+            indicatorsHTML += `
+              <strong>Analysis Reasoning:</strong>
+              <p class="reasoning-text">${shortReasoning}</p>
+            `;
+          }
+          
+          // Add quality analysis if available
+          if (result.qualityAnalysis) {
+            const quality = result.qualityAnalysis;
+            indicatorsHTML += `
+              <strong>Image Quality Analysis:</strong>
+              <div class="quality-metrics">
+                <span>Quality Score: ${Math.round(quality.score * 100)}%</span>
+                ${quality.resolution !== 'unknown' ? `<span>Resolution: ${quality.resolution}</span>` : ''}
+              </div>
+            `;
+          }
+          
+          // Add variance information for multi-model results
+          if (aiData.variance !== undefined) {
+            const agreementLevel = aiData.variance < 400 ? 'High' : aiData.variance < 900 ? 'Moderate' : 'Low';
+            indicatorsHTML += `
+              <div class="model-agreement">
+                <strong>Model Agreement:</strong> ${agreementLevel} (variance: ${aiData.variance})
+              </div>
+            `;
+          }
+          
+          if (indicatorsHTML === `<strong>Detection Method:</strong> ${aiData.method || 'Multi-model analysis'}<br>`) {
+            indicatorsHTML += '<p>No specific AI generation indicators detected.</p>';
+          }
+          
+          aiIndicators.innerHTML = indicatorsHTML;
         } else {
-          aiVerdict.textContent = '📷 Likely Real Image';
-          aiVerdict.className = 'ai-verdict likely-real';
-        }
-        
-        // Update indicators
-        if (aiData.indicators.length > 0) {
-          aiIndicators.innerHTML = `
-            <strong>Detection Indicators:</strong>
-            <ul>
-              ${aiData.indicators.map(indicator => `<li>${indicator}</li>`).join('')}
-            </ul>
-            <p><em>Method: ${aiData.method}</em></p>
-          `;
-        } else {
-          aiIndicators.innerHTML = '<p>No specific AI generation indicators detected.</p>';
+          // Handle case where analysis succeeded but no AI data
+          aiVerdict.textContent = '❓ Unable to determine';
+          aiVerdict.className = 'ai-verdict uncertain';
+          aiConfidence.textContent = 'Analysis incomplete';
+          aiIndicators.innerHTML = '<p>Could not analyze image for AI generation.</p>';
         }
       } else {
-        aiVerdict.textContent = '❓ Unable to determine';
+        // Handle case where analysis failed
+        aiVerdict.textContent = '❌ Analysis failed';
         aiVerdict.className = 'ai-verdict uncertain';
-        aiConfidence.textContent = 'Analysis incomplete';
-        aiIndicators.innerHTML = '<p>Could not analyze image for AI generation.</p>';
+        aiConfidence.textContent = 'Error';
+        aiIndicators.innerHTML = '<p>Multi-model analysis failed. Please try again.</p>';
       }
     } else {
       // Fallback: Show message about AI detection service
       aiVerdict.textContent = '⚙️ Service not configured';
       aiVerdict.className = 'ai-verdict uncertain';
       aiConfidence.textContent = 'N/A';
-      aiIndicators.innerHTML = '<p>AI detection service not available. Please configure SightEngine API key in config.js</p>';
+      aiIndicators.innerHTML = `
+        <p><strong>AI detection service not available.</strong></p>
+        <p>Possible reasons:</p>
+        <ul>
+          <li>Gemini API key not configured in config.js</li>
+          <li>SightEngine API credentials not configured in config.js</li>
+          <li>Network connectivity issues</li>
+        </ul>
+        <p><em>Please configure at least one AI detection service in config.js</em></p>
+      `;
     }
   } catch (error) {
     console.error('AI detection failed:', error);
     aiVerdict.textContent = '❌ Detection failed';
     aiVerdict.className = 'ai-verdict uncertain';
     aiConfidence.textContent = 'Error';
-    aiIndicators.innerHTML = '<p>Failed to analyze image for AI generation. Please try again.</p>';
+    
+    // Provide specific error messages
+    if (error.message.includes('CORS')) {
+      aiIndicators.innerHTML = `
+        <p><strong>CORS Error Detected</strong></p>
+        <p>SightEngine API cannot be accessed directly from the browser due to CORS restrictions.</p>
+        <p><strong>Solutions:</strong></p>
+        <ul>
+          <li>Use a backend server to proxy API requests</li>
+          <li>Deploy the application with proper CORS configuration</li>
+          <li>Use SightEngine's JavaScript SDK if available</li>
+        </ul>
+        <p><em>Error: ${error.message}</em></p>
+      `;
+    } else {
+      aiIndicators.innerHTML = `
+        <p>Failed to analyze image for AI generation.</p>
+        <p><strong>Error:</strong> ${error.message}</p>
+        <p>Please check your API credentials and try again.</p>
+      `;
+    }
   }
 }
 
@@ -2005,6 +2242,59 @@ class AccessibilityManager {
   }
 }
 
+// Mobile Menu Functionality
+function initMobileMenu() {
+  const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+  const headerNav = document.querySelector('.header__nav');
+  const navLinks = document.querySelectorAll('.nav__link');
+  
+  if (!mobileMenuToggle || !headerNav) return;
+  
+  // Toggle mobile menu
+  mobileMenuToggle.addEventListener('click', () => {
+    const isOpen = headerNav.classList.contains('mobile-open');
+    
+    if (isOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  });
+  
+  // Close menu when clicking nav links
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      closeMobileMenu();
+    });
+  });
+  
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!mobileMenuToggle.contains(e.target) && !headerNav.contains(e.target)) {
+      closeMobileMenu();
+    }
+  });
+  
+  // Close menu on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeMobileMenu();
+    }
+  });
+  
+  function openMobileMenu() {
+    headerNav.classList.add('mobile-open');
+    mobileMenuToggle.classList.add('active');
+    mobileMenuToggle.setAttribute('aria-expanded', 'true');
+  }
+  
+  function closeMobileMenu() {
+    headerNav.classList.remove('mobile-open');
+    mobileMenuToggle.classList.remove('active');
+    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
 // Initialize application
 function initApp() {
   console.log('Initializing Factify application...');
@@ -2019,6 +2309,7 @@ function initApp() {
   // Initialize core functionality
   initNavigation();
   initThemeToggle();
+  initMobileMenu();
   initVerification();
   initNewsSection();
   initLanguage();

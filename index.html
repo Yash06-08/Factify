@@ -25,10 +25,15 @@
                 <div class="header__logo">
                     <h1 class="logo__title">Factify</h1>
                 </div>
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle mobile menu" aria-expanded="false">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
                 <nav class="header__nav" role="navigation" aria-label="Main navigation">
                     <a href="#home" class="nav__link active" aria-current="page">Home</a>
-                    <a href="#verify" class="nav__link">Verify Image</a>
-                    <a href="#news" class="nav__link">Digital Literacy News</a>
+                    <a href="#verify" class="nav__link">Verify Content</a>
+                    <a href="#news" class="nav__link">News Centre</a>
                     <a href="#bot" class="nav__link">Mobile Bot</a>
                 </nav>
                 <div class="header__actions">
@@ -195,30 +200,6 @@
                     </div>
                 </div>
 
-                <!-- Results Section -->
-                <div id="resultsSection" class="results-section hidden">
-                    <div class="results-card">
-                        <div class="results-header">
-                            <h3>Verification Results</h3>
-                        </div>
-                        <div class="confidence-meter">
-                            <div class="confidence-label">Confidence Level</div>
-                            <div class="confidence-bar">
-                                <div class="confidence-fill" id="confidenceFill"></div>
-                            </div>
-                            <div class="confidence-value" id="confidenceValue">0%</div>
-                        </div>
-                        <div class="verdict-display" id="verdictDisplay">
-                            <div class="verdict-icon" id="verdictIcon">⚠️</div>
-                            <div class="verdict-text" id="verdictText">Analysis Complete</div>
-                        </div>
-                        <div class="analysis-explanation" id="analysisExplanation"></div>
-                        <div class="recommendation-tips">
-                            <h4>Recommendations</h4>
-                            <ul id="recommendationsList"></ul>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- AI Fact-Check Chatbot -->
                 <div class="chatbot-container" id="chatbotContainer">
@@ -367,7 +348,7 @@
     <section id="news" class="news-section section hidden">
         <div class="container">
             <div class="news-header">
-                <h2>Digital Literacy News Center</h2>
+                <h2>News Centre</h2>
                 <p>Stay informed about the latest in misinformation detection, digital literacy, and cybersecurity</p>
             </div>
 
